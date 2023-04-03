@@ -23,9 +23,9 @@ subprojects {
     version = properties["version"] as String
     
     repositories {
+        mavenLocal()
+        mavenCentral()
         maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-        maven("https://oss.sonatype.org/content/repositories/snapshots")
-        maven("https://oss.sonatype.org/content/repositories/central")
         maven("https://repo.xenondevs.xyz/releases")
         maven("https://repo.xenondevs.xyz/third-party-releases")
         maven("https://jitpack.io")
@@ -33,8 +33,6 @@ subprojects {
         maven("https://repo.glaremasters.me/repository/bloodshot")
         maven("https://mvn.lumine.io/repository/maven-public/")
         maven("https://repo.papermc.io/repository/maven-public/")
-        mavenLocal()
-        mavenCentral()
     }
     
     tasks.withType<ProcessResources> {
