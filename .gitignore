@@ -66,3 +66,5 @@ ${dir}/
 
 # gradle directories
 build/
+
+buildtools/
