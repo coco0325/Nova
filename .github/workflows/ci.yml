@@ -46,6 +46,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: ./artifacts/*.jar
-
-      - name: Build & Publish Mojang-Mapped
-        run: ./gradlew clean publishNovaPublicationToXenondevsRepository publishNovaAPIPublicationToXenondevsRepository publishNovaGradlePluginPublicationToXenondevsRepository publishNova-gradle-pluginPluginMarkerMavenPublicationToXenondevsRepository -PxenondevsUsername=${{ secrets.MAVEN_USERNAME }} -PxenondevsPassword=${{ secrets.MAVEN_PASSWORD }} -Dmojang-mapped
