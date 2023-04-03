@@ -99,6 +99,7 @@ abstract class BuildLoaderJarTask : DefaultTask() {
             .mapTo(HashSet()) { it.url.toString() }
             .apply { this -= MAVEN_CENTRAL }
             .toList() // Required for proper serialization
+        println()
         
         setLibraries(librariesYml, "novaLoader", true)
         excludeConfiguration(librariesYml, "spigotRuntime")

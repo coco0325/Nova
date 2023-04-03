@@ -7,6 +7,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
+import xyz.xenondevs.nova.util.TaskUtils
 import xyz.xenondevs.nova.util.item.damageItemInMainHand
 import xyz.xenondevs.nova.util.playSoundNearby
 import xyz.xenondevs.nova.util.runTaskLater
@@ -32,7 +33,8 @@ object Flattening : ItemBehavior() {
                 block.type = Material.DIRT_PATH
                 block.location.playSoundNearby(Sound.ITEM_SHOVEL_FLATTEN, SoundCategory.BLOCKS, 1f, 1f)
                 player.damageItemInMainHand()
-                runTaskLater(1) { player.swingHand(event.hand!!) }
+                runTaskLater(1, player.location, player, TaskUtils.ENTITY) { player.swingHand(event.hand!!) }
+
             }
         }
     }

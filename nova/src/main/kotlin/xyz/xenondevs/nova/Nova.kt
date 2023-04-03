@@ -31,6 +31,17 @@ import xyz.xenondevs.nova.api.tileentity.TileEntityManager as ITileEntityManager
 
 private val REQUIRED_SERVER_VERSION = Version("1.19.4")..Version("1.19.4")
 
+var IS_FOLIA = isFolia()
+
+private fun isFolia(): Boolean {
+    return try {
+        Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
+        true
+    } catch (e: ClassNotFoundException) {
+        false
+    }
+}
+
 internal lateinit var NOVA: Nova
     private set
 

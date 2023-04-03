@@ -5,6 +5,7 @@ website: "https://github.com/xenondevs/Nova/"
 main: xyz.xenondevs.nova.loader.NovaLoader
 api-version: 1.19
 load: STARTUP
+folia-supported: true
 
 softdepend:
   - WorldGuard

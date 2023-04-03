@@ -518,8 +518,8 @@ fun Material.getBreakParticlesPacket(location: Location): ClientboundLevelPartic
  * Plays the breaking sound for this block.
  */
 fun Block.playBreakSound() {
-    val soundGroup = soundGroup ?: return
-    world.playSound(location, soundGroup.breakSound, soundGroup.breakVolume, soundGroup.breakPitch)
+    val soundGroup = blockSoundGroup ?: return
+    world.playSound(location, soundGroup.breakSound, soundGroup.volume, soundGroup.pitch)
 }
 
 /**

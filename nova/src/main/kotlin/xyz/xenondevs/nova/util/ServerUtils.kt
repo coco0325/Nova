@@ -16,6 +16,7 @@ object ServerUtils {
             "Tuinity" -> TUINITY
             "Purpur" -> PURPUR
             "Airplane" -> AIRPLANE
+            "Folia" -> FOLIA
             else -> UNKNOWN
         }
     }
@@ -33,6 +34,7 @@ enum class ServerSoftware(private val superSoftware: ServerSoftware?) {
     TUINITY(PAPER),
     PURPUR(TUINITY),
     AIRPLANE(PURPUR),
+    FOLIA(PAPER),
     UNKNOWN(null);
     
     val tree = buildList<ServerSoftware> { 

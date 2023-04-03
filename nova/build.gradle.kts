@@ -39,6 +39,9 @@ dependencies {
     // spigot runtime dependencies
     spigotRuntime(libs.bundles.maven.resolver)
     spigotRuntime(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
+
+    // folia
+    compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
     
     // plugin dependencies
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.6")

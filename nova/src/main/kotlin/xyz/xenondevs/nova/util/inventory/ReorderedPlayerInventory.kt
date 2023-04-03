@@ -47,7 +47,7 @@ internal class ReorderedPlayerInventory(private val inventory: PlayerInventory):
         throw UnsupportedOperationException()
     }
     
-    override fun addItem(vararg items: ItemStack?): HashMap<Int, ItemStack> {
+    override fun addItem(vararg items: ItemStack): java.util.HashMap<Int, ItemStack> {
         throw UnsupportedOperationException()
     }
     

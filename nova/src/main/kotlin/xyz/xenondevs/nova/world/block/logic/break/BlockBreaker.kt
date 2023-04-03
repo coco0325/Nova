@@ -120,7 +120,7 @@ internal sealed class BlockBreaker(val player: Player, val block: Block, val sta
     }
     protected abstract val requiresToolForDrops: Boolean
     
-    protected val soundGroup: SoundGroup? = block.soundGroup
+    protected val soundGroup: org.bukkit.SoundGroup = block.blockSoundGroup
     protected val hardness: Double = block.hardness
     protected val tool: ItemStack? = player.inventory.itemInMainHand.takeUnlessEmpty()
     protected val toolCategory: ToolCategory? = ToolCategory.ofItem(tool)
@@ -161,10 +161,10 @@ internal sealed class BlockBreaker(val player: Player, val block: Block, val sta
             if (progress < 1.0 && destroyTicks % 4 == 0) {
                 if (soundGroup != null) {
                     block.pos.playSound(
-                        soundGroup.hitSound,
+                        soundGroup.hitSound.name,
                         SoundCategory.BLOCKS,
-                        soundGroup.hitVolume,
-                        soundGroup.hitPitch
+                        soundGroup.volume,
+                        soundGroup.pitch
                     )
                 }
             }
