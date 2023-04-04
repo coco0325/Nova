@@ -46,9 +46,9 @@ class Consumable(private val options: FoodOptions) : ItemBehavior() {
         runTaskTimer(0, 1) {
             eaters.removeIf { (player, eater) ->
                 if (serverTick >= eater.startTime + options.consumeTime) {
-                    finishEating(player, eater)
+                    runTask(player) {finishEating(player, eater)}
                     return@removeIf true
-                } else handleEating(player, eater)
+                } else runTask(player) {finishEating(player, eater)}
                 
                 return@removeIf false
             }

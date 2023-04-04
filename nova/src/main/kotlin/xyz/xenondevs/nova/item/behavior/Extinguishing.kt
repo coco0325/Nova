@@ -12,13 +12,8 @@ import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.nmsutils.particle.particle
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.util.item.damageItemInHand
-import xyz.xenondevs.nova.util.nmsState
-import xyz.xenondevs.nova.util.runTaskLater
-import xyz.xenondevs.nova.util.sendTo
-import xyz.xenondevs.nova.util.serverLevel
-import xyz.xenondevs.nova.util.serverPlayer
-import xyz.xenondevs.nova.util.swingHand
 import xyz.xenondevs.nova.world.pos
 import kotlin.random.Random
 
@@ -50,7 +45,7 @@ object Extinguishing : ItemBehavior() {
                 
                 val hand = event.hand!!
                 player.damageItemInHand(hand)
-                runTaskLater(1) { player.swingHand(hand) }
+                runTaskLater(1, player) { player.swingHand(hand) }
             }
         }
     }

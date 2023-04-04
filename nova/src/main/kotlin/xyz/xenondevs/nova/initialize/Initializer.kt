@@ -188,12 +188,12 @@ internal object Initializer : Listener {
         Bukkit.shutdown()
     }
     
-    @EventHandler(priority = EventPriority.HIGHEST)
+    /*@EventHandler(priority = EventPriority.HIGHEST)
     private fun handleLogin(event: PlayerLoginEvent) {
         if (!isDone && !IS_DEV_SERVER) {
             event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "[Nova] Initialization not complete. Please wait.")
         }
-    }
+    }*/
     
     @EventHandler
     private fun handleServerStarted(event: ServerLoadEvent) {

@@ -58,7 +58,7 @@ open class ItemAttachment(
         }
         
         passenger.spawnHandler = {
-            runTaskLater(1) {
+            runTaskLater(1, player) {
                 // This packet will be modified in AbilityManager to include all attachment armor stands
                 it.send(ClientboundSetPassengersPacket(player.entityId, player.passengers.mapToIntArray(Entity::getEntityId)))
                 

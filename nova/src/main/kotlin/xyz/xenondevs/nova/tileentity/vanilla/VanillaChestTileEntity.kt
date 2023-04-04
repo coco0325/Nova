@@ -33,7 +33,7 @@ internal class VanillaChestTileEntity internal constructor(blockState: VanillaTi
         itemHolder = DynamicVanillaItemHolder(this, { inventories }, { allowedConnectionTypes })
         
         if (isChunkLoaded) {
-            runTaskLaterSynchronized(VanillaTileEntityManager, 1) {
+            runTaskLaterSynchronized(VanillaTileEntityManager, 1, block.location) {
                 if (!isChunkLoaded) return@runTaskLaterSynchronized
                 doubleChestLocation = getOtherChestLocation()
                 doubleChestLocation?.let {
@@ -92,7 +92,7 @@ internal class VanillaChestTileEntity internal constructor(blockState: VanillaTi
         if (NOVA.isEnabled) {
             val doubleChestLocation = doubleChestLocation
             if (doubleChestLocation != null) {
-                runTaskLaterSynchronized(VanillaTileEntityManager, 1) {
+                runTaskLaterSynchronized(VanillaTileEntityManager, 1, doubleChestLocation) {
                     val chest = VanillaTileEntityManager.getTileEntityAt(doubleChestLocation)
                     if (chest is VanillaChestTileEntity) chest.handleChestStateChange()
                 }

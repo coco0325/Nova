@@ -141,7 +141,7 @@ internal object BlockBehaviorManager : Initializable(), Listener {
         }
         
         if (behavior.runUpdateLater)
-            runTask(task)
+            runTask(block.location, task)
         else task()
     }
     

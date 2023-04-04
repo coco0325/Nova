@@ -11,16 +11,14 @@ import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.block.RotatedPillarBlock
 import net.minecraft.world.level.block.WeatheringCopper
 import net.minecraft.world.level.block.state.BlockState
+import org.bukkit.Bukkit
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.util.interactionHand
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.util.item.DamageableUtils
-import xyz.xenondevs.nova.util.nmsState
-import xyz.xenondevs.nova.util.runTaskLater
-import xyz.xenondevs.nova.util.serverLevel
-import xyz.xenondevs.nova.util.serverPlayer
 import xyz.xenondevs.nova.world.pos
 import net.minecraft.world.entity.player.Player as MojangPlayer
 
@@ -68,7 +66,10 @@ object Stripping : ItemBehavior() {
         val itemStack = player.getItemInHand(hand)
         
         fun setNewState(newState: BlockState) {
-            runTaskLater(1) { player.swing(hand, true) }
+            val bukkitPlayer = Bukkit.getPlayer(player.name.toString())
+            if (bukkitPlayer != null) {
+                runTaskLater(1, bukkitPlayer as Entity) { player.swing(hand, true) }
+            }
             level.setBlock(pos, newState, 11)
             DamageableUtils.damageAndBreakItem(itemStack, 1, player)
         }

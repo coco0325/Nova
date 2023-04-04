@@ -98,7 +98,7 @@ object AttachmentManager : Initializable(), Listener {
     
     @EventHandler
     private fun handleRespawn(event: PlayerRespawnEvent) {
-        runTaskLater(1) {
+        runTaskLater(1, event.player) {
             val player = event.player
             if (player.isOnline && !player.isDead)
                 activateAttachments(event.player)

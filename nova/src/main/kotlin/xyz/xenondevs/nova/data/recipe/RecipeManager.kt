@@ -7,6 +7,7 @@ import org.bukkit.Keyed
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Tag
+import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -34,24 +35,14 @@ import xyz.xenondevs.nova.data.config.configReloadable
 import xyz.xenondevs.nova.data.recipe.impl.RepairItemRecipe
 import xyz.xenondevs.nova.initialize.Initializable
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.util.MINECRAFT_SERVER
-import xyz.xenondevs.nova.util.addToInventoryOrDrop
-import xyz.xenondevs.nova.util.containsAll
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.util.data.clientsideCopy
 import xyz.xenondevs.nova.util.data.key
 import xyz.xenondevs.nova.util.item.customModelData
 import xyz.xenondevs.nova.util.item.namelessCopyOrSelf
 import xyz.xenondevs.nova.util.item.novaMaterial
 import xyz.xenondevs.nova.util.item.unhandledTags
-import xyz.xenondevs.nova.util.namespacedKey
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry
-import xyz.xenondevs.nova.util.registerEvents
-import xyz.xenondevs.nova.util.registerPacketListener
-import xyz.xenondevs.nova.util.resourceLocation
-import xyz.xenondevs.nova.util.runTask
-import xyz.xenondevs.nova.util.send
-import xyz.xenondevs.nova.util.serverPlayer
-import xyz.xenondevs.nova.util.takeFirstOccurrence
 import net.minecraft.world.item.crafting.Recipe as MojangRecipe
 import org.bukkit.inventory.Recipe as BukkitRecipe
 
@@ -339,10 +330,10 @@ object RecipeManager : Initializable(), Listener {
     private fun handleRecipePlace(event: ServerboundPlaceRecipePacketEvent) {
         val key = NamespacedKey.fromString(event.packet.recipe.toString())
         if (key in shapedRecipes) {
-            runTask { fillCraftingInventory(event.player, shapedRecipes[key]!!) }
+            runTask(event.player as Entity) { fillCraftingInventory(event.player, shapedRecipes[key]!!) }
             event.isCancelled = true
         } else if (key in shapelessRecipes) {
-            runTask { fillCraftingInventory(event.player, shapelessRecipes[key]!!) }
+            runTask(event.player as Entity) { fillCraftingInventory(event.player, shapelessRecipes[key]!!) }
             event.isCancelled = true
         }
     }

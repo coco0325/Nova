@@ -133,7 +133,7 @@ internal object WorldDataManager : Initializable(), Listener {
             val chunk = getRegion(pos).getChunk(pos)
             
             // the rest needs to be done in the server thread
-            runTask {
+            runTask(chunk.world, chunk.pos.x, chunk.pos.z) {
                 try {
                     if (pos.isLoaded()) {
                         if (pos in pendingOrphanBlocks) {

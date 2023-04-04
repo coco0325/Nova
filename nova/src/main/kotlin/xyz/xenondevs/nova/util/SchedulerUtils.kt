@@ -4,8 +4,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask
 import org.bukkit.Bukkit
 import org.bukkit.Location
+import org.bukkit.World
 import org.bukkit.entity.Entity
-import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.scheduler.BukkitTask
 import xyz.xenondevs.nova.IS_FOLIA
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
@@ -21,7 +22,7 @@ import java.util.logging.Level
 
 val USE_NOVA_SCHEDULER by configReloadable { DEFAULT_CONFIG.getBoolean("performance.nova_executor.enabled") }
 
-fun runTaskLater(delay: Long, run: () -> Unit) =
+/*fun runTaskLater(delay: Long, run: () -> Unit) =
     Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay)
 
 fun runTask(run: () -> Unit) =
@@ -69,7 +70,7 @@ fun runAsyncTaskTimerSynchronized(lock: Any, delay: Long, period: Long, run: () 
     Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, Runnable { synchronized(lock, run) }, delay, period)
 
 fun runAsyncTaskTimer(delay: Long, period: Long, run: () -> Unit) =
-    Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, run, delay, period)
+    Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, run, delay, period)*/
 
 internal object AsyncExecutor {
     
@@ -109,81 +110,227 @@ internal object AsyncExecutor {
 
 // Folia start
 
-fun runTaskLater(delay: Long, location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().runDelayed(NOVA.loader, { run }, delay)
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().runDelayed(NOVA.loader, location, { run }, delay)
-            TaskUtils.ENTITY -> entity.scheduler.runDelayed(NOVA.loader, { run }, {}, delay)
-            else -> {}
-        }
+fun runTaskLater(delay: Long, world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runDelayed(NOVA.loader, world, chunkX, chunkZ, { run }, delay))
     } else {
-        Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay)
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay))
     }
 }
 
-fun runTask(location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().run(NOVA.loader) { run }
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().run(NOVA.loader, location) { run }
-            TaskUtils.ENTITY -> entity.scheduler.run(NOVA.loader, { run }, {})
-            else -> {}
-        }
+fun runTaskLater(delay: Long, location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runDelayed(NOVA.loader, location, { run }, delay))
     } else {
-        Bukkit.getScheduler().runTask(NOVA.loader, run)
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay))
     }
 }
 
-fun runTaskTimer(delay: Long, period: Long, location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().runAtFixedRate(NOVA.loader, { run }, delay, period)
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, location, { run }, delay, period)
-            TaskUtils.ENTITY -> entity.scheduler.runAtFixedRate(NOVA.loader, { run }, {}, delay, period)
-            else -> {}
-        }
+fun runTaskLater(delay: Long, entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.runDelayed(NOVA.loader, { run }, {}, delay))
     } else {
-        Bukkit.getScheduler().runTaskTimer(NOVA.loader, run, delay, period)
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay))
     }
 }
 
-fun runTaskSynchronized(lock: Any, location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().run(NOVA.loader) { synchronized(lock) { run } }
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().run(NOVA.loader, location) { synchronized(lock) { run } }
-            TaskUtils.ENTITY -> entity.scheduler.run(NOVA.loader, { synchronized(lock) { run } }, {})
-            else -> {}
-        }
+fun runTaskLater(delay: Long, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().runDelayed(NOVA.loader, { run }, delay))
     } else {
-        Bukkit.getScheduler().runTask(NOVA.loader,  Runnable { synchronized(lock) { run } })
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader, run, delay))
     }
 }
 
-fun runTaskLaterSynchronized(lock: Any, delay: Long, location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().runDelayed(NOVA.loader, { synchronized(lock) { run } }, delay)
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().runDelayed(NOVA.loader, location, { synchronized(lock) { run.run() } }, delay)
-            TaskUtils.ENTITY -> entity.scheduler.runDelayed(NOVA.loader, { synchronized(lock) { run } }, {}, delay)
-            else -> {}
-        }
+fun runTask(location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().run(NOVA.loader, location) { run })
     } else {
-        Bukkit.getScheduler().runTaskLater(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay)
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader, run))
     }
 }
 
-fun runTaskTimerSynchronized(lock: Any, delay: Long, period: Long, location: Location, entity: Entity, type: TaskUtils, run: Runnable) {
-    if (IS_FOLIA) {
-        when (type) {
-            TaskUtils.GLOBAL -> Bukkit.getGlobalRegionScheduler().runAtFixedRate(NOVA.loader, { synchronized(lock) { run } }, delay, period)
-            TaskUtils.REGIONAL -> Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, location, { synchronized(lock) { run } }, delay, period)
-            TaskUtils.ENTITY -> entity.scheduler.runAtFixedRate(NOVA.loader, { synchronized(lock) { run } }, {}, delay, period)
-            else -> {}
-        }
+fun runTask(world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().run(NOVA.loader, world, chunkX, chunkZ) { run })
     } else {
-        Bukkit.getScheduler().runTaskTimer(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay, period)
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader, run))
+    }
+}
+
+fun runTask(entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.run(NOVA.loader, { run }, {}))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader, run))
+    }
+}
+
+fun runTask(run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().run(NOVA.loader) { run })
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader, run))
+    }
+}
+
+fun runTaskTimer(delay: Long, period: Long, world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, world, chunkX, chunkZ, { run }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader, run, delay, period))
+    }
+}
+
+fun runTaskTimer(delay: Long, period: Long, location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, location, { run }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader, run, delay, period))
+    }
+}
+
+fun runTaskTimer(delay: Long, period: Long, entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.runAtFixedRate(NOVA.loader, { run }, {}, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader, run, delay, period))
+    }
+}
+
+fun runTaskTimer(delay: Long, period: Long, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().runAtFixedRate(NOVA.loader, { run }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader, run, delay, period))
+    }
+}
+
+fun runTaskSynchronized(lock: Any, world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().run(NOVA.loader, world, chunkX, chunkZ) { synchronized(lock) { run } })
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader,  Runnable { synchronized(lock) { run } }))
+    }
+}
+
+fun runTaskSynchronized(lock: Any, location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().run(NOVA.loader, location) { synchronized(lock) { run } })
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader,  Runnable { synchronized(lock) { run } }))
+    }
+}
+
+fun runTaskSynchronized(lock: Any, entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.run(NOVA.loader, { synchronized(lock) { run } }, {}))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader,  Runnable { synchronized(lock) { run } }))
+    }
+}
+
+fun runTaskSynchronized(lock: Any, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().run(NOVA.loader) { synchronized(lock) { run } })
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTask(NOVA.loader,  Runnable { synchronized(lock) { run } }))
+    }
+}
+
+fun runTaskLaterSynchronized(lock: Any, delay: Long, world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runDelayed(NOVA.loader, world, chunkX, chunkZ, { synchronized(lock) { run.run() } }, delay))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay))
+    }
+}
+
+fun runTaskLaterSynchronized(lock: Any, delay: Long, location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runDelayed(NOVA.loader, location, { synchronized(lock) { run.run() } }, delay))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay))
+    }
+}
+
+fun runTaskLaterSynchronized(lock: Any, delay: Long, entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.runDelayed(NOVA.loader, { synchronized(lock) { run } }, {}, delay))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay))
+    }
+}
+
+fun runTaskLaterSynchronized(lock: Any, delay: Long, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().runDelayed(NOVA.loader, { synchronized(lock) { run } }, delay))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskLater(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay))
+    }
+}
+
+fun runTaskTimerSynchronized(lock: Any, delay: Long, period: Long, world: World, chunkX: Int, chunkZ: Int, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, world, chunkX, chunkZ, { synchronized(lock) { run } }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay, period))
+    }
+}
+
+fun runTaskTimerSynchronized(lock: Any, delay: Long, period: Long, location: Location, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getRegionScheduler().runAtFixedRate(NOVA.loader, location, { synchronized(lock) { run } }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay, period))
+    }
+}
+
+fun runTaskTimerSynchronized(lock: Any, delay: Long, period: Long, entity: Entity, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(entity.scheduler.runAtFixedRate(NOVA.loader, { synchronized(lock) { run } }, {}, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay, period))
+    }
+}
+
+fun runTaskTimerSynchronized(lock: Any, delay: Long, period: Long, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getGlobalRegionScheduler().runAtFixedRate(NOVA.loader, { synchronized(lock) { run } }, delay, period))
+    } else {
+        Task.wrapBukkit(Bukkit.getScheduler().runTaskTimer(NOVA.loader,  Runnable { synchronized(lock) { run } }, delay, period))
+    }
+}
+
+fun runSyncTaskWhenUnlocked(lock: ObservableLock,  world: World, chunkX: Int, chunkZ: Int, run: Runnable) {
+    if (IS_FOLIA) {
+        Bukkit.getRegionScheduler().runDelayed(NOVA.loader, world, chunkX, chunkZ, { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, world, chunkX, chunkZ, run) }, 1)
+    } else {
+        runTaskLater(1, world, chunkX, chunkZ) { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, world, chunkX, chunkZ, run) }
+    }
+}
+
+fun runSyncTaskWhenUnlocked(lock: ObservableLock, location: Location, run: Runnable) {
+    if (IS_FOLIA) {
+        Bukkit.getRegionScheduler().runDelayed(NOVA.loader, location, { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, location, run) }, 1)
+    } else {
+        runTaskLater(1, location) { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, location, run) }
+    }
+}
+
+fun runSyncTaskWhenUnlocked(lock: ObservableLock, entity: Entity, run: Runnable) {
+    if (IS_FOLIA) {
+        entity.scheduler.runDelayed(NOVA.loader, { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, entity, run) }, {},1)
+    } else {
+        runTaskLater(1, entity) { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, entity, run) }
+    }
+}
+
+fun runSyncTaskWhenUnlocked(lock: ObservableLock, run: Runnable) {
+    if (IS_FOLIA) {
+        Bukkit.getGlobalRegionScheduler().runDelayed(NOVA.loader, { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, run) }, 1)
+    } else {
+        runTaskLater(1) { if (!lock.tryLockAndRun({ run })) runSyncTaskWhenUnlocked(lock, run) }
     }
 }
 
@@ -222,16 +369,41 @@ fun runAsyncTaskWithLock(lock: ObservableLock, run: Runnable) {
     } else Bukkit.getScheduler().runTaskAsynchronously(NOVA.loader, task)
 }
 
-fun runAsyncTaskTimerSynchronized(lock: Any, delay: Long, period: Long, run: Runnable) {
+fun runAsyncTaskTimerSynchronized(lock: Any, delay: Long, period: Long, run: Runnable): Task {
     val task = Runnable { synchronized(lock, { run }) }
-    if (IS_FOLIA) {
-        Bukkit.getAsyncScheduler().runNow(NOVA.loader, { task })
-    } else Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, task, delay, period)
+    return if (IS_FOLIA) {
+        return Task.wrapFolia(Bukkit.getAsyncScheduler().runNow(NOVA.loader, { task }))
+    } else Task.wrapBukkit(Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, task, delay, period))
 }
 
-fun runAsyncTaskTimer(delay: Long, period: Long, run: Runnable) {
-    if (IS_FOLIA) {
-        Bukkit.getAsyncScheduler().runAtFixedRate(NOVA.loader, { run }, delay, period * 50, TimeUnit.MILLISECONDS)
-    } else Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, run, delay, period)
+fun runAsyncTaskTimer(delay: Long, period: Long, run: Runnable): Task {
+    return if (IS_FOLIA) {
+        Task.wrapFolia(Bukkit.getAsyncScheduler().runAtFixedRate(NOVA.loader, { run }, delay, period * 50, TimeUnit.MILLISECONDS))
+    } else Task.wrapBukkit(Bukkit.getScheduler().runTaskTimerAsynchronously(NOVA.loader, run, delay, period))
+}
+
+
+class Task(private val wrapped: Any?, canceller: Consumer<Any>) {
+    fun cancel() {
+        if (wrapped != null) {
+            canceller.accept(wrapped)
+        }
+    }
+
+    private val canceller: Consumer<Any>
+
+    init {
+        this.canceller = canceller
+    }
+
+    companion object {
+        fun wrapBukkit(runnable: BukkitTask?): Task {
+            return Task(runnable) { task -> (task as BukkitTask).cancel() }
+        }
+
+        fun wrapFolia(scheduledTask: ScheduledTask?): Task {
+            return Task(scheduledTask) { task -> (task as ScheduledTask).cancel() }
+        }
+    }
 }
 // Folia end

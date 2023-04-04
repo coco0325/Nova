@@ -14,6 +14,7 @@ import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.config.NovaConfig
 import xyz.xenondevs.nova.initialize.Initializable
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.util.Task
 import xyz.xenondevs.nova.util.component.adventure.sendMessage
 import xyz.xenondevs.nova.util.data.Version
 import xyz.xenondevs.nova.util.registerEvents
@@ -27,7 +28,7 @@ internal object UpdateReminder : Initializable(), Listener {
     override val initializationStage = InitializationStage.POST_WORLD_ASYNC
     override val dependsOn = setOf(NovaConfig)
     
-    private var task: BukkitTask? = null
+    private var task: Task? = null
     private val needsUpdate = ArrayList<Addon?>()
     private val alreadyNotified = ArrayList<Addon?>()
     

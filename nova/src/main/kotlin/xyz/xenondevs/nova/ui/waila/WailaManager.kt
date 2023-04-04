@@ -17,6 +17,7 @@ import xyz.xenondevs.nova.data.serialization.persistentdata.get
 import xyz.xenondevs.nova.data.serialization.persistentdata.set
 import xyz.xenondevs.nova.initialize.Initializable
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.util.Task
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.util.unregisterEvents
@@ -35,7 +36,7 @@ internal object WailaManager : Initializable(), Listener, IWailaManager {
     override val initializationStage = InitializationStage.POST_WORLD
     override val dependsOn = setOf(ResourceGeneration.PostWorld, AddonsInitializer)
     
-    private var tickTask: BukkitTask? = null
+    private var tickTask: Task? = null
     private val overlays = HashMap<Player, Waila>()
     
     //<editor-fold desc="Nova-API", defaultstate="collapsed">
