@@ -84,21 +84,26 @@ internal object BlockBehaviorManager : Initializable(), Listener {
                 try {
                     while (chunkSearchQueue.isNotEmpty()) {
                         val chunkPos = chunkSearchQueue.poll()
-                        
+
                         if (!chunkPos.isLoaded())
                             continue
-                        
-                        BlockStateSearcher.searchChunk(chunkPos, behaviorQueries)
-                            .withIndex()
-                            .forEach { (idx, result) ->
-                                if (result == null)
-                                    return@forEach
-                                
-                                behaviors[idx].handleQueryResult(result)
+
+                        chunkPos.world?.let {
+                            runTask(it, chunkPos.x, chunkPos.z) {
+                                BlockStateSearcher.searchChunk(chunkPos, behaviorQueries)
+                                    .withIndex()
+                                    .forEach { (idx, result) ->
+                                        if (result == null)
+                                            return@forEach
+
+                                        behaviors[idx].handleQueryResult(result)
+                                    }
+                                chunkPos.chunk!!.persistentDataContainer.set(
+                                    CHUNK_SEARCH_ID_KEY,
+                                    PersistentDataType.INTEGER,
+                                    chunkSearchId
+                                )
                             }
-                        
-                        runTask {
-                            chunkPos.chunk!!.persistentDataContainer.set(CHUNK_SEARCH_ID_KEY, PersistentDataType.INTEGER, chunkSearchId)
                         }
                     }
                     
