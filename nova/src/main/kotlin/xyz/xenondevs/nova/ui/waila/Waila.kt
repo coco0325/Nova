@@ -1,18 +1,28 @@
 package xyz.xenondevs.nova.ui.waila
 
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
+import net.minecraft.resources.ResourceLocation
+import org.bukkit.block.Block
 import org.bukkit.entity.Player
-import xyz.xenondevs.nova.data.NamespacedId
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.config.configReloadable
+import xyz.xenondevs.nova.data.world.block.state.NovaBlockState
+import xyz.xenondevs.nova.integration.customitems.CustomItemServiceManager
+import xyz.xenondevs.nova.registry.NovaRegistries.WAILA_INFO_PROVIDER
 import xyz.xenondevs.nova.ui.overlay.bossbar.BossBarOverlayManager
+import xyz.xenondevs.nova.ui.waila.info.NovaWailaInfoProvider
+import xyz.xenondevs.nova.ui.waila.info.VanillaWailaInfoProvider
 import xyz.xenondevs.nova.ui.waila.info.WailaInfo
-import xyz.xenondevs.nova.ui.waila.info.WailaInfoProviderRegistry
+import xyz.xenondevs.nova.ui.waila.info.WailaLine
+import xyz.xenondevs.nova.ui.waila.info.line.ToolLine
 import xyz.xenondevs.nova.ui.waila.overlay.WailaOverlayCompound
 import xyz.xenondevs.nova.util.data.WildcardUtils
 import xyz.xenondevs.nova.util.id
-import xyz.xenondevs.nova.util.runTask
+import xyz.xenondevs.nova.util.name
 import xyz.xenondevs.nova.util.serverTick
 import xyz.xenondevs.nova.world.BlockPos
+import xyz.xenondevs.nova.world.block.BlockManager
 import xyz.xenondevs.nova.world.pos
 
 private val POS_UPDATE_INTERVAL by configReloadable { DEFAULT_CONFIG.getInt("waila.pos_update_interval") }
@@ -54,20 +64,18 @@ internal class Waila(val player: Player) {
     }
     
     fun handleTick() {
-        runTask(player) {
-            val serverTick = serverTick
-            if (serverTick - lastPosUpdate >= POS_UPDATE_INTERVAL) {
-                lastPosUpdate = serverTick
-                val pos = player.getTargetBlockExact(5)?.pos
-                if (pos != lookingAt) {
-                    lastDataUpdate = serverTick
-                    update(pos)
-                }
-            }
-            if (serverTick - lastDataUpdate >= DATA_UPDATE_INTERVAL) {
+        val serverTick = serverTick
+        if (serverTick - lastPosUpdate >= POS_UPDATE_INTERVAL) {
+            lastPosUpdate = serverTick
+            val pos = player.getTargetBlockExact(5)?.pos
+            if (pos != lookingAt) {
                 lastDataUpdate = serverTick
-                update(lookingAt)
+                update(pos)
             }
+        }
+        if (serverTick - lastDataUpdate >= DATA_UPDATE_INTERVAL) {
+            lastDataUpdate = serverTick
+            update(lookingAt)
         }
     }
     
@@ -82,7 +90,7 @@ internal class Waila(val player: Player) {
             if (isBlacklisted(blockId))
                 return false
             
-            val info = WailaInfoProviderRegistry.getInfo(player, pos)
+            val info = getInfo(player, pos)
                 ?: return false
             
             if (info != prevInfo) {
@@ -96,7 +104,40 @@ internal class Waila(val player: Player) {
         return false
     }
     
-    private fun isBlacklisted(id: NamespacedId) =
+    private fun getInfo(player: Player, pos: BlockPos): WailaInfo? {
+        val novaState = BlockManager.getBlockState(pos)
+        if (novaState is NovaBlockState) {
+            val material = novaState.block
+            
+            return WAILA_INFO_PROVIDER.asSequence()
+                .filterIsInstance<NovaWailaInfoProvider>()
+                .lastOrNull { it.blocks == null || material in it.blocks }
+                ?.getInfo(player, novaState)
+        } else {
+            val block = pos.block
+            val type = block.type
+            
+            return getCustomItemServiceInfo(player, block)
+                ?: WAILA_INFO_PROVIDER.asSequence()
+                    .filterIsInstance<VanillaWailaInfoProvider>()
+                    .lastOrNull { it.materials == null || type in it.materials }
+                    ?.getInfo(player, block)
+        }
+    }
+    
+    private fun getCustomItemServiceInfo(player: Player, block: Block): WailaInfo? {
+        val blockId = CustomItemServiceManager.getId(block)?.let { runCatching { ResourceLocation.of(it, ':') }.getOrNull() } ?: return null
+        val blockName = CustomItemServiceManager.getName(block, player.locale) ?: return null
+        
+        val lines = ArrayList<WailaLine>()
+        lines += WailaLine(blockName, WailaLine.Alignment.CENTERED)
+        lines += WailaLine(Component.text(blockId.toString(), NamedTextColor.DARK_GRAY), WailaLine.Alignment.CENTERED)
+        lines += ToolLine.getCustomItemServiceToolLine(player, block)
+        
+        return WailaInfo(blockId, lines)
+    }
+    
+    private fun isBlacklisted(id: ResourceLocation) =
         BLACKLISTED_BLOCKS.any { (namespaceRegex, nameRegex) ->
             namespaceRegex.matches(id.namespace) && nameRegex.matches(id.name)
         }

@@ -12,16 +12,14 @@ import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.commons.provider.immutable.combinedProvider
-import xyz.xenondevs.commons.provider.immutable.lazyProviderWrapper
 import xyz.xenondevs.nova.data.resources.Resources
 import xyz.xenondevs.nova.data.serialization.cbf.NamespacedCompound
-import xyz.xenondevs.nova.item.PacketItemData
+import xyz.xenondevs.nova.item.NovaItem
+import xyz.xenondevs.nova.item.logic.PacketItemData
+import xyz.xenondevs.nova.item.options.WearableOptions
 import xyz.xenondevs.nova.item.vanilla.AttributeModifier
 import xyz.xenondevs.nova.item.vanilla.HideableFlag
 import xyz.xenondevs.nova.item.vanilla.VanillaMaterialProperty
-import xyz.xenondevs.nova.material.ItemNovaMaterial
-import xyz.xenondevs.nova.material.options.WearableOptions
 import xyz.xenondevs.nova.player.equipment.ArmorType
 import xyz.xenondevs.nova.util.data.getOrPut
 import xyz.xenondevs.nova.util.item.isActuallyInteractable
@@ -39,22 +37,22 @@ fun Wearable(type: ArmorType, equipSound: SoundEvent): ItemBehaviorFactory<Weara
 
 fun Wearable(type: ArmorType, equipSound: String? = null): ItemBehaviorFactory<Wearable> =
     object : ItemBehaviorFactory<Wearable>() {
-        override fun create(material: ItemNovaMaterial): Wearable =
-            Wearable(WearableOptions.configurable(type, equipSound, material))
+        override fun create(item: NovaItem): Wearable =
+            Wearable(WearableOptions.configurable(type, equipSound, item))
     }
 
 class Wearable(val options: WearableOptions) : ItemBehavior() {
     
     private val textureColor: Int? by lazy {
-        Resources.getModelData(novaMaterial.id).armor
+        Resources.getModelData(item.id).armor
             ?.let { Resources.getArmorData(it) }?.color
     }
     
-    override val vanillaMaterialProperties = lazyProviderWrapper {
+    override fun getVanillaMaterialProperties(): List<VanillaMaterialProperty> {
         if (textureColor == null)
-            return@lazyProviderWrapper emptyList()
+            return emptyList()
         
-        return@lazyProviderWrapper listOf(
+        return listOf(
             when (options.armorType) {
                 ArmorType.HELMET -> VanillaMaterialProperty.HELMET
                 ArmorType.CHESTPLATE -> VanillaMaterialProperty.CHESTPLATE
@@ -64,33 +62,30 @@ class Wearable(val options: WearableOptions) : ItemBehavior() {
         )
     }
     
-    override val attributeModifiers = combinedProvider(
-        options.armorTypeProvider, options.armorProvider, options.armorToughnessProvider, options.knockbackResistanceProvider
-    ) { armorType, armor, armorToughness, knockbackResistance ->
-        val equipmentSlot = armorType.equipmentSlot.nmsEquipmentSlot
-        
-        listOf(
+    override fun getAttributeModifiers(): List<AttributeModifier> {
+        val equipmentSlot = options.armorType.equipmentSlot.nmsEquipmentSlot
+        return listOf(
             AttributeModifier(
-                "Nova Armor (${novaMaterial.id}})",
+                "Nova Armor (${item.id}})",
                 Attributes.ARMOR,
                 Operation.ADDITION,
-                armor,
+                options.armor,
                 true,
                 equipmentSlot
             ),
             AttributeModifier(
-                "Nova Armor Toughness (${novaMaterial.id}})",
+                "Nova Armor Toughness (${item.id}})",
                 Attributes.ARMOR_TOUGHNESS,
                 Operation.ADDITION,
-                armorToughness,
+                options.armorToughness,
                 true,
                 equipmentSlot
             ),
             AttributeModifier(
-                "Nova Knockback Resistance (${novaMaterial.id}})",
+                "Nova Knockback Resistance (${item.id}})",
                 Attributes.KNOCKBACK_RESISTANCE,
                 Operation.ADDITION,
-                knockbackResistance,
+                options.knockbackResistance,
                 true,
                 equipmentSlot
             )

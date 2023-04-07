@@ -5,11 +5,11 @@ import net.minecraft.world.item.ItemStack
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
-import xyz.xenondevs.nova.material.BlockNovaMaterial
-import xyz.xenondevs.nova.material.CoreBlockOverlay
+import xyz.xenondevs.nova.item.DefaultBlockOverlays
 import xyz.xenondevs.nova.util.nmsCopy
 import xyz.xenondevs.nova.util.sendDestructionPacket
 import xyz.xenondevs.nova.world.BlockPos
+import xyz.xenondevs.nova.world.block.NovaBlock
 import xyz.xenondevs.nova.world.fakeentity.impl.FakeItemDisplay
 import xyz.xenondevs.nova.world.pos
 import kotlin.random.Random
@@ -28,16 +28,16 @@ internal interface BreakMethod {
             override fun stop() {}
         }
         
-        fun of(block: Block, material: BlockNovaMaterial, entityId: Int = Random.nextInt()): BreakMethod? =
+        fun of(block: Block, material: NovaBlock, entityId: Int = Random.nextInt()): BreakMethod =
             of(block, material, null, entityId)
         
         fun of(
             block: Block,
-            material: BlockNovaMaterial,
+            material: NovaBlock,
             predictionPlayer: Player?,
             entityId: Int = predictionPlayer?.entityId ?: Random.nextInt()
         ): BreakMethod {
-            return if (material.showBreakAnimation)
+            return if (material.options.showBreakAnimation)
                 if (block.type == Material.BARRIER) DisplayEntityBreakMethod(block.pos)
                 else PacketBreakMethod(block.pos, entityId, predictionPlayer)
             else INVISIBLE
@@ -92,7 +92,7 @@ internal class DisplayEntityBreakMethod(pos: BlockPos) : VisibleBreakMethod(pos)
             field = stage
             itemDisplay.updateEntityData(true) {
                 itemStack = if (stage in 0..9)
-                    CoreBlockOverlay.BREAK_STAGE_OVERLAY.clientsideProviders[stage].get().nmsCopy
+                    DefaultBlockOverlays.BREAK_STAGE_OVERLAY.clientsideProviders[stage].get().nmsCopy
                 else ItemStack.EMPTY
             }
         }

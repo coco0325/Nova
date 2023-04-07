@@ -5,6 +5,9 @@ import com.mojang.serialization.DynamicOps
 import com.mojang.serialization.Lifecycle
 import net.minecraft.core.BlockPos
 import net.minecraft.core.BlockPos.MutableBlockPos
+import net.minecraft.core.DefaultedMappedRegistry
+import net.minecraft.core.Holder
+import net.minecraft.core.HolderGetter
 import net.minecraft.core.MappedRegistry
 import net.minecraft.core.NonNullList
 import net.minecraft.core.Registry
@@ -26,8 +29,14 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.LevelHeightAccessor
 import net.minecraft.world.level.LevelReader
 import net.minecraft.world.level.WorldGenLevel
+import net.minecraft.world.level.biome.Biome
+import net.minecraft.world.level.biome.Biome.ClimateSettings
+import net.minecraft.world.level.biome.Biome.TemperatureModifier
 import net.minecraft.world.level.biome.BiomeGenerationSettings
+import net.minecraft.world.level.biome.BiomeSpecialEffects
+import net.minecraft.world.level.biome.BiomeSpecialEffects.GrassColorModifier
 import net.minecraft.world.level.biome.FeatureSorter
+import net.minecraft.world.level.biome.MobSpawnSettings
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.DispenserBlock
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity
@@ -39,6 +48,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection
 import net.minecraft.world.level.chunk.LinearPalette
 import net.minecraft.world.level.chunk.PalettedContainer
 import net.minecraft.world.level.chunk.UpgradeData
+import net.minecraft.world.level.levelgen.NoiseRouterData
 import net.minecraft.world.level.levelgen.blending.BlendingData
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext
 import net.minecraft.world.level.levelgen.feature.OreFeature
@@ -96,13 +106,19 @@ internal object ReflectionRegistry {
     val ITEM_STACK_CONSTRUCTOR = getConstructor(MojangStack::class, false, ItemLike::class)
     val CHUNK_ACCESS_CONSTRUCTOR = getConstructor(ChunkAccess::class, false, ChunkPos::class, UpgradeData::class, LevelHeightAccessor::class, Registry::class, Long::class, Array<LevelChunkSection>::class, BlendingData::class)
     val INVENTORY_CONSTRUCTOR = getConstructor(MojangInventory::class, false, MojangPlayer::class)
+    val BIOME_CLIMATE_SETTINGS_CONSTRUCTOR = getConstructor(ClimateSettings::class, true, Boolean::class, Float::class, TemperatureModifier::class, Float::class)
+    val BIOME_SPECIAL_EFFECTS_CONSTRUCTOR = getConstructor(BiomeSpecialEffects::class, true, Int::class, Int::class, Int::class, Int::class, Optional::class, Optional::class, GrassColorModifier::class, Optional::class, Optional::class, Optional::class, Optional::class, Optional::class)
+    val BIOME_GENERATION_SETTINGS_CONSTRUCTOR = getConstructor(BiomeGenerationSettings::class, true, Map::class, List::class)
+    val MOB_SPAWN_SETTINGS_CONSTRUCTOR = getConstructor(MobSpawnSettings::class, true, Float::class, Map::class, Map::class)
+    val BIOME_CONSTRUCTOR = getConstructor(Biome::class, true, ClimateSettings::class, BiomeSpecialEffects::class, BiomeGenerationSettings::class, MobSpawnSettings::class)
     
     // Methods
+    val CLASS_LOADER_PARENT_FIELD by lazy { getField(ClassLoader::class.java, true, "parent") }
+    val CLASS_LOADER_DEFINE_CLASS_METHOD by lazy { getMethod(ClassLoader::class, true, "defineClass", String::class, ByteArray::class, Int::class, Int::class, ProtectionDomain::class) }
     val CB_CRAFT_META_APPLY_TO_METHOD = getMethod(CB_CRAFT_META_ITEM_CLASS, true, "applyToItem", CompoundTag::class)
     val FEATURE_SORTER_BUILD_FEATURES_PER_STEP_METHOD = getMethod(FeatureSorter::class, true, "SRM(net.minecraft.world.level.biome.FeatureSorter buildFeaturesPerStep)", List::class, JavaFunction::class, Boolean::class)
     val LEVEL_CHUNK_SECTION_SET_BLOCK_STATE_METHOD = getMethod(LevelChunkSection::class, true, "SRM(net.minecraft.world.level.chunk.LevelChunkSection setBlockState)", Int::class, Int::class, Int::class, BlockState::class, Boolean::class)
     val CRAFT_BLOCK_DATA_IS_PREFERRED_TOOL_METHOD = getMethod(CraftBlockData::class, true, "isPreferredTool", BlockState::class, MojangStack::class)
-    val CLASS_LOADER_DEFINE_CLASS_METHOD = getMethod(ClassLoader::class, true, "defineClass", String::class, ByteArray::class, Int::class, Int::class, ProtectionDomain::class)
     val ITEM_STACK_HURT_AND_BREAK_METHOD = getMethod(MojangStack::class, false, "SRM(net.minecraft.world.item.ItemStack hurtAndBreak)", Int::class, MojangLivingEntity::class, Consumer::class)
     val EXPERIENCE_ORB_REPAIR_PLAYER_ITEMS_METHOD = getMethod(ExperienceOrb::class, true, "SRM(net.minecraft.world.entity.ExperienceOrb repairPlayerItems)", MojangPlayer::class, Int::class)
     val ENTITY_PLAY_STEP_SOUND_METHOD = getMethod(MojangEntity::class, true, "SRM(net.minecraft.world.entity.Entity playStepSound)", BlockPos::class, BlockState::class)
@@ -111,6 +127,7 @@ internal object ReflectionRegistry {
     val REGISTRY_BY_NAME_CODEC_METHOD = getMethod(Registry::class, true, "SRM(net.minecraft.core.Registry lambda\$byNameCodec\$1)", ResourceLocation::class)
     val MAPPED_REGISTRY_LIFECYCLE_METHOD = getMethod(MappedRegistry::class, false, "SRM(net.minecraft.core.MappedRegistry lifecycle)", Any::class)
     val MAPPED_REGISTRY_REGISTER_MAPPING_METHOD = getMethod(MappedRegistry::class, false, "SRM(net.minecraft.core.MappedRegistry registerMapping)", Int::class, ResourceKey::class, Any::class, Lifecycle::class)
+    val DEFAULTED_MAPPED_REGISTRY_GET_METHOD = getMethod(DefaultedMappedRegistry::class, false, "SRM(net.minecraft.core.DefaultedMappedRegistry get)", ResourceLocation::class)
     val COMPOUND_TAG_READ_NAMED_TAG_DATA_METHOD = getMethod(CompoundTag::class, true, "SRM(net.minecraft.nbt.CompoundTag readNamedTagData)", TagType::class, String::class, DataInput::class, Int::class, NbtAccounter::class)
     val ABSTRACT_FURNACE_BLOCK_ENTITY_GET_BURN_DURATION_METHOD = getMethod(AbstractFurnaceBlockEntity::class, true, "SRM(net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity getBurnDuration)", MojangStack::class)
     val RECIPE_GET_REMAINING_ITEMS_METHOD = getMethod(Recipe::class, false, "SRM(net.minecraft.world.item.crafting.Recipe getRemainingItems)", Container::class)
@@ -127,6 +144,8 @@ internal object ReflectionRegistry {
     val BLOCK_GETTER_GET_BLOCK_STATE_METHOD = getMethod(BlockGetter::class, false, "SRM(net.minecraft.world.level.BlockGetter getBlockState)", BlockPos::class)
     val FEATURE_PLACE_CONTEXT_RANDOM_METHOD = getMethod(FeaturePlaceContext::class, false, "SRM(net.minecraft.world.level.levelgen.feature.FeaturePlaceContext random)")
     val DISPENSER_BLOCK_GET_DISPENSE_METHOD_METHOD = getMethod(DispenserBlock::class, true, "SRM(net.minecraft.world.level.block.DispenserBlock getDispenseMethod)", MojangStack::class)
+    val HOLDER_REFERENCE_BIND_VALUE_METHOD = getMethod(Holder.Reference::class, true, "SRM(net.minecraft.core.Holder\$Reference bindValue)", Any::class)
+    val NOISE_ROUTER_DATA_OVERWORLD_METHOD = getMethod(NoiseRouterData::class, true, "SRM(net.minecraft.world.level.levelgen.NoiseRouterData overworld)", HolderGetter::class, HolderGetter::class, Boolean::class, Boolean::class)
     
     // Fields
     val CRAFT_META_ITEM_UNHANDLED_TAGS_FIELD = getField(CB_CRAFT_META_ITEM_CLASS, true, "unhandledTags")

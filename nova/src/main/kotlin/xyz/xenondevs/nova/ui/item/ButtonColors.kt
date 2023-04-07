@@ -1,13 +1,13 @@
 package xyz.xenondevs.nova.ui.item
 
-import xyz.xenondevs.nova.material.CoreGuiMaterial
+import xyz.xenondevs.nova.item.DefaultGuiItems
 
 val BUTTON_COLORS = listOf(
-    CoreGuiMaterial.RED_BTN,
-    CoreGuiMaterial.ORANGE_BTN,
-    CoreGuiMaterial.YELLOW_BTN,
-    CoreGuiMaterial.GREEN_BTN,
-    CoreGuiMaterial.BLUE_BTN,
-    CoreGuiMaterial.PINK_BTN,
-    CoreGuiMaterial.WHITE_BTN
+    DefaultGuiItems.RED_BTN,
+    DefaultGuiItems.ORANGE_BTN,
+    DefaultGuiItems.YELLOW_BTN,
+    DefaultGuiItems.GREEN_BTN,
+    DefaultGuiItems.BLUE_BTN,
+    DefaultGuiItems.PINK_BTN,
+    DefaultGuiItems.WHITE_BTN
 )

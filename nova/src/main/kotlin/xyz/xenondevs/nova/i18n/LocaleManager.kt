@@ -10,23 +10,26 @@ import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.data.resources.ResourceGeneration
 import xyz.xenondevs.nova.data.resources.Resources
 import xyz.xenondevs.nova.data.resources.builder.ResourcePackBuilder
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.material.ItemNovaMaterial
+import xyz.xenondevs.nova.initialize.InternalInit
+import xyz.xenondevs.nova.item.NovaItem
 import xyz.xenondevs.nova.util.formatSafely
 import xyz.xenondevs.nova.util.runAsyncTask
 
-object LocaleManager : Initializable() {
-    
-    override val initializationStage = InitializationStage.POST_WORLD_ASYNC
-    override val dependsOn = setOf(ResourceGeneration.PreWorld)
+@InternalInit(
+    stage = InitializationStage.POST_WORLD_ASYNC,
+    dependsOn = [ResourceGeneration.PreWorld::class]
+)
+object LocaleManager {
     
     private val loadedLangs = HashSet<String>()
     private val loadingLangs = HashSet<String>()
     
     private lateinit var translationProviders: MutableMap<String, HashMap<String, String>>
     
-    override fun init() {
+    @InitFun
+    private fun init() {
         translationProviders = Resources.languageLookup.entries.associateTo(HashMap()) { (key, value) -> key to HashMap(value) }
         loadLang("en_us")
         Language.inject(NovaLanguage)
@@ -104,13 +107,13 @@ object LocaleManager : Initializable() {
     }
     
     @Synchronized
-    fun getTranslatedName(lang: String, material: ItemNovaMaterial): String {
-        return getTranslation(lang, material.localizedName)
+    fun getTranslatedName(lang: String, item: NovaItem): String {
+        return getTranslation(lang, item.localizedName)
     }
     
     @Synchronized
-    fun getTranslatedName(player: Player, material: ItemNovaMaterial): String {
-        return getTranslation(player, material.localizedName)
+    fun getTranslatedName(player: Player, item: NovaItem): String {
+        return getTranslation(player, item.localizedName)
     }
     
     private object NovaLanguage : Language() {

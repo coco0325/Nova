@@ -1,4 +1,4 @@
-@file:Suppress("unused", "UNCHECKED_CAST")
+@file:Suppress("unused")
 
 package xyz.xenondevs.nova.data.config
 
@@ -7,7 +7,7 @@ import xyz.xenondevs.commons.provider.Provider
 import xyz.xenondevs.commons.provider.immutable.orElse
 import xyz.xenondevs.commons.provider.immutable.requireNonNull
 import xyz.xenondevs.nova.data.serialization.yaml.getDeserialized
-import xyz.xenondevs.nova.material.ItemNovaMaterial
+import xyz.xenondevs.nova.item.NovaItem
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -18,7 +18,7 @@ abstract class ConfigAccess(private val configReceiver: () -> YamlConfiguration)
     
     constructor(path: String) : this({ NovaConfig[path] })
     
-    constructor(material: ItemNovaMaterial) : this({ NovaConfig[material] })
+    constructor(item: NovaItem) : this({ NovaConfig[item] })
     
     protected inline fun <reified T : Any> getEntry(key: String): Provider<T> {
         return RequiredConfigEntryAccessor<T>(key, typeOf<T>()).also(ConfigEntryAccessor<*>::reload)

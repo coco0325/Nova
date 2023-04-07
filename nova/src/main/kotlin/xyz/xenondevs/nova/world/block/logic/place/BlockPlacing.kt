@@ -14,7 +14,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import xyz.xenondevs.nova.data.world.WorldDataManager
 import xyz.xenondevs.nova.data.world.block.state.NovaBlockState
 import xyz.xenondevs.nova.integration.protection.ProtectionManager
-import xyz.xenondevs.nova.material.BlockNovaMaterial
 import xyz.xenondevs.nova.player.WrappedPlayerInteractEvent
 import xyz.xenondevs.nova.util.advance
 import xyz.xenondevs.nova.util.component.adventure.sendMessage
@@ -26,7 +25,7 @@ import xyz.xenondevs.nova.util.isInsideWorldRestrictions
 import xyz.xenondevs.nova.util.isUnobstructed
 import xyz.xenondevs.nova.util.item.isActuallyInteractable
 import xyz.xenondevs.nova.util.item.isReplaceable
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.placeVanilla
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTask
@@ -34,6 +33,7 @@ import xyz.xenondevs.nova.util.serverPlayer
 import xyz.xenondevs.nova.util.swingHand
 import xyz.xenondevs.nova.util.yaw
 import xyz.xenondevs.nova.world.block.BlockManager
+import xyz.xenondevs.nova.world.block.NovaBlock
 import xyz.xenondevs.nova.world.block.context.BlockPlaceContext
 import xyz.xenondevs.nova.world.block.limits.TileEntityLimits
 import xyz.xenondevs.nova.world.pos
@@ -71,20 +71,21 @@ internal object BlockPlacing : Listener {
             val block = event.clickedBlock!!
             
             if (!block.type.isActuallyInteractable() || player.isSneaking) {
-                val material = handItem?.novaMaterial
-                if (material is BlockNovaMaterial) {
-                    placeNovaBlock(event, material)
+                val novaItem = handItem?.novaItem
+                val novaBlock = novaItem?.block
+                if (novaBlock != null) {
+                    placeNovaBlock(event, novaBlock)
                 } else if (
-                    BlockManager.hasBlock(block.pos) // the block placed against is from Nova
+                    BlockManager.hasBlockState(block.pos) // the block placed against is from Nova
                     && block.type.isReplaceable() // and will be replaced without special behavior
-                    && material == null
+                    && novaItem == null
                     && handItem?.type?.isBlock == true // a vanilla block material is used 
                 ) placeVanillaBlock(event)
             }
         }
     }
     
-    private fun placeNovaBlock(event: PlayerInteractEvent, material: BlockNovaMaterial) {
+    private fun placeNovaBlock(event: PlayerInteractEvent, material: NovaBlock) {
         event.isCancelled = true
         
         val player = event.player
@@ -93,7 +94,7 @@ internal object BlockPlacing : Listener {
         
         val clicked = event.clickedBlock!!
         val placeLoc: Location =
-            if (clicked.type.isReplaceable() && !BlockManager.hasBlock(clicked.pos))
+            if (clicked.type.isReplaceable() && !BlockManager.hasBlockState(clicked.pos))
                 clicked.location
             else clicked.location.advance(event.blockFace)
         
@@ -126,7 +127,7 @@ internal object BlockPlacing : Listener {
             
             val result = TileEntityLimits.canPlace(ctx)
             if (result.allowed) {
-                BlockManager.placeBlock(material, ctx)
+                BlockManager.placeBlockState(material, ctx)
                 
                 if (player.gameMode == GameMode.SURVIVAL) handItem.amount--
                 runTask { player.swingHand(event.hand!!) }

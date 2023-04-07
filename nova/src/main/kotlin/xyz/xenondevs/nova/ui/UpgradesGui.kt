@@ -15,13 +15,14 @@ import xyz.xenondevs.invui.item.impl.AbstractItem
 import xyz.xenondevs.invui.item.impl.SimpleItem
 import xyz.xenondevs.invui.window.Window
 import xyz.xenondevs.invui.window.type.context.setTitle
-import xyz.xenondevs.nova.material.CoreGuiMaterial
+import xyz.xenondevs.nova.item.DefaultGuiItems
 import xyz.xenondevs.nova.tileentity.upgrade.UpgradeHolder
 import xyz.xenondevs.nova.tileentity.upgrade.UpgradeType
 import xyz.xenondevs.nova.ui.item.BackItem
 import xyz.xenondevs.nova.ui.item.ScrollLeftItem
 import xyz.xenondevs.nova.ui.item.ScrollRightItem
 import xyz.xenondevs.nova.util.addItemCorrectly
+import xyz.xenondevs.nova.util.name
 import xyz.xenondevs.nova.util.playClickSound
 import xyz.xenondevs.nova.util.playItemPickupSound
 
@@ -38,7 +39,7 @@ class UpgradesGui(val upgradeHolder: UpgradeHolder, openPrevious: (Player) -> Un
         .addIngredient('<', ScrollLeftItem())
         .addIngredient('>', ScrollRightItem())
         .addIngredient('x', Markers.CONTENT_LIST_SLOT_VERTICAL)
-        .setBackground(CoreGuiMaterial.INVENTORY_PART.clientsideProvider)
+        .setBackground(DefaultGuiItems.INVENTORY_PART.clientsideProvider)
         .setContent(createUpgradeItemList())
         .build()
     
@@ -115,8 +116,8 @@ class UpgradesGui(val upgradeHolder: UpgradeHolder, openPrevious: (Player) -> Un
         
         override fun getItemProvider(): ItemProvider {
             return if (type in upgradeHolder.allowed)
-                CoreGuiMaterial.NUMBER.item.createClientsideItemBuilder(subId = upgradeHolder.upgrades[type] ?: 0)
-            else CoreGuiMaterial.MINUS.clientsideProvider
+                DefaultGuiItems.NUMBER.model.createClientsideItemBuilder(modelId = upgradeHolder.upgrades[type] ?: 0)
+            else DefaultGuiItems.MINUS.clientsideProvider
         }
         
         override fun handleClick(clickType: ClickType, player: Player, event: InventoryClickEvent) = Unit
@@ -125,7 +126,7 @@ class UpgradesGui(val upgradeHolder: UpgradeHolder, openPrevious: (Player) -> Un
     
 }
 
-class OpenUpgradesItem(private val upgradeHolder: UpgradeHolder) : SimpleItem(CoreGuiMaterial.UPGRADES_BTN.clientsideProvider) {
+class OpenUpgradesItem(private val upgradeHolder: UpgradeHolder) : SimpleItem(DefaultGuiItems.UPGRADES_BTN.clientsideProvider) {
     
     override fun handleClick(clickType: ClickType, player: Player, event: InventoryClickEvent) {
         player.playClickSound()

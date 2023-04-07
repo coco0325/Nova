@@ -23,7 +23,7 @@ import xyz.xenondevs.bytebase.util.isClass
 import xyz.xenondevs.bytebase.util.replaceEvery
 import xyz.xenondevs.bytebase.util.replaceEveryRange
 import xyz.xenondevs.nova.transformer.MultiTransformer
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.nmsCopy
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.ABSTRACT_FURNACE_BLOCK_ENTITY_ITEMS_FIELD
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.BREWING_STAND_BLOCK_ENTITY_DO_BREW_METHOD
@@ -151,27 +151,27 @@ internal object RemainingItemPatches : MultiTransformer(
     
     @JvmStatic
     fun hasCraftingRemainingItem(itemStack: MojangStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null)
-            return novaMaterial.craftingRemainingItem != null
+        val novaItem = itemStack.novaItem
+        if (novaItem != null)
+            return novaItem.craftingRemainingItem != null
         
         return itemStack.item.hasCraftingRemainingItem()
     }
     
     @JvmStatic
     fun getRemainingItemStack(itemStack: MojangStack): MojangStack {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null)
-            return novaMaterial.craftingRemainingItem?.get()?.nmsCopy ?: MojangStack.EMPTY
+        val novaItem = itemStack.novaItem
+        if (novaItem != null)
+            return novaItem.craftingRemainingItem?.get()?.nmsCopy ?: MojangStack.EMPTY
         
         return MojangStack(itemStack.item.craftingRemainingItem)
     }
     
     @JvmStatic
     fun getRemainingBukkitItemStack(itemStack: MojangStack): BukkitStack? {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null)
-            return novaMaterial.craftingRemainingItem?.get()
+        val novaItem = itemStack.novaItem
+        if (novaItem != null)
+            return novaItem.craftingRemainingItem?.get()
         
         return itemStack.item.craftingRemainingItem?.let { ItemStack(CraftMagicNumbers.getMaterial(it)) }
     }

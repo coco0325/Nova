@@ -1,9 +1,9 @@
 package xyz.xenondevs.nova.ui.waila.overlay
 
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.entity.Player
 import xyz.xenondevs.commons.provider.immutable.combinedProvider
 import xyz.xenondevs.commons.provider.immutable.map
-import xyz.xenondevs.nova.data.NamespacedId
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.config.configReloadable
 import xyz.xenondevs.nova.data.resources.CharSizes
@@ -16,7 +16,7 @@ import xyz.xenondevs.nova.ui.overlay.bossbar.positioning.BarMatcher
 import xyz.xenondevs.nova.ui.overlay.bossbar.positioning.BarPositioning
 import xyz.xenondevs.nova.ui.waila.info.WailaLine
 
-private val BAR_MATCH_INFO = BarMatchInfo.fromAddon(NamespacedId("nova", "waila"))
+private val BAR_MATCH_INFO = BarMatchInfo.fromAddon(ResourceLocation("nova", "waila"))
 
 private val MARGIN_TOP = configReloadable { DEFAULT_CONFIG.getInt("waila.positioning.margin_top") }
 private val MARGIN_BOTTOM = configReloadable { DEFAULT_CONFIG.getInt("waila.positioning.margin_bottom") }
@@ -37,7 +37,7 @@ internal class WailaOverlayCompound(private val player: Player) : BossBarOverlay
     private val imageOverlay = WailaImageOverlay()
     private val lineOverlays = Array(10, ::WailaLineOverlay)
     
-    fun update(icon: NamespacedId, lines: List<WailaLine>) {
+    fun update(icon: ResourceLocation, lines: List<WailaLine>) {
         require(lines.size <= 10) { "Waila text can't be longer than 10 lines" }
         
         // reset line overlays

@@ -4,6 +4,7 @@ package xyz.xenondevs.nova.data.world
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import org.bukkit.Bukkit
+import org.bukkit.Material
 import org.bukkit.World
 import org.bukkit.block.BlockFace
 import org.bukkit.event.EventHandler
@@ -13,6 +14,7 @@ import org.bukkit.event.world.ChunkLoadEvent
 import org.bukkit.event.world.ChunkUnloadEvent
 import org.bukkit.event.world.WorldSaveEvent
 import org.bukkit.event.world.WorldUnloadEvent
+import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.commons.collections.pollFirstWhere
 import xyz.xenondevs.nmsutils.util.removeIf
 import xyz.xenondevs.nova.LOGGER
@@ -22,9 +24,10 @@ import xyz.xenondevs.nova.data.world.block.state.BlockState
 import xyz.xenondevs.nova.data.world.block.state.NovaBlockState
 import xyz.xenondevs.nova.data.world.event.NovaChunkLoadedEvent
 import xyz.xenondevs.nova.data.world.legacy.LegacyFileConverter
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.DisableFun
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.material.BlockNovaMaterial
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.tileentity.TileEntityManager
 import xyz.xenondevs.nova.tileentity.network.NetworkManager
 import xyz.xenondevs.nova.tileentity.vanilla.VanillaTileEntityManager
@@ -34,6 +37,7 @@ import xyz.xenondevs.nova.util.runTask
 import xyz.xenondevs.nova.util.toNovaPos
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.ChunkPos
+import xyz.xenondevs.nova.world.block.NovaBlock
 import xyz.xenondevs.nova.world.block.context.BlockPlaceContext
 import xyz.xenondevs.nova.world.pos
 import java.util.*
@@ -45,10 +49,17 @@ import kotlin.concurrent.write
 import net.minecraft.core.BlockPos as MojangBlockPos
 import net.minecraft.world.level.Level as MojangWorld
 
-internal object WorldDataManager : Initializable(), Listener {
-    
-    override val initializationStage = InitializationStage.POST_WORLD
-    override val dependsOn = setOf(AddonsInitializer, LegacyFileConverter, TileEntityManager, VanillaTileEntityManager, NetworkManager)
+@InternalInit(
+    stage = InitializationStage.POST_WORLD,
+    dependsOn = [
+        AddonsInitializer::class,
+        LegacyFileConverter::class,
+        TileEntityManager::class,
+        VanillaTileEntityManager::class,
+        NetworkManager.Companion::class
+    ]
+)
+internal object WorldDataManager : Listener {
     
     private val worlds: MutableMap<UUID, WorldDataStorage> = Collections.synchronizedMap(HashMap()) // TODO: removing entries of unloaded worlds
     
@@ -56,9 +67,10 @@ internal object WorldDataManager : Initializable(), Listener {
     private val chunkTasks: MutableMap<ChunkPos, Boolean> = Collections.synchronizedMap(HashMap())
     private val chunkLocks: MutableMap<ChunkPos, Latch> = Collections.synchronizedMap(HashMap())
     
-    private val pendingOrphanBlocks = Object2ObjectOpenHashMap<ChunkPos, MutableMap<BlockPos, BlockNovaMaterial>>()
+    private val pendingOrphanBlocks = Object2ObjectOpenHashMap<ChunkPos, MutableMap<BlockPos, NovaBlock>>()
     
-    override fun init() {
+    @InitFun
+    private fun init() {
         LOGGER.info("Initializing WorldDataManager")
         registerEvents()
         Bukkit.getWorlds().forEach(::queueWorldLoad)
@@ -100,7 +112,8 @@ internal object WorldDataManager : Initializable(), Listener {
         }
     }
     
-    override fun disable() {
+    @DisableFun
+    private fun disable() {
         Bukkit.getWorlds().forEach(::saveWorld)
     }
     
@@ -219,11 +232,11 @@ internal object WorldDataManager : Initializable(), Listener {
         writeChunk(pos.chunkPos) { it.blockStates -= pos }
     
     @Synchronized
-    internal fun addOrphanBlock(world: MojangWorld, x: Int, y: Int, z: Int, material: BlockNovaMaterial) {
+    internal fun addOrphanBlock(world: MojangWorld, x: Int, y: Int, z: Int, material: NovaBlock) {
         return addOrphanBlock(BlockPos(world.world, x, y, z), material)
     }
     
-    internal fun addOrphanBlock(pos: BlockPos, material: BlockNovaMaterial) {
+    internal fun addOrphanBlock(pos: BlockPos, material: NovaBlock) {
         val chunk = pos.chunkPos
         if (chunk.isLoaded()) {
             placeOrphanBlock(pos, material)
@@ -233,19 +246,19 @@ internal object WorldDataManager : Initializable(), Listener {
     }
     
     @Synchronized
-    private fun placeOrphanBlock(pos: BlockPos, material: BlockNovaMaterial) {
-        val ctx = BlockPlaceContext(pos, material.clientsideProvider.get(), null, null, null, pos.below, BlockFace.UP)
+    private fun placeOrphanBlock(pos: BlockPos, material: NovaBlock) {
+        val ctx = BlockPlaceContext(pos, material.item?.createItemStack(0) ?: ItemStack(Material.AIR), null, null, null, pos.below, BlockFace.UP)
         val state = material.createNewBlockState(ctx)
         setBlockState(pos, state)
         state.handleInitialized(true)
-        material.novaBlock.handlePlace(state, ctx)
+        material.logic.handlePlace(state, ctx)
     }
     
     @Synchronized
-    internal fun getWorldGenMaterial(pos: MojangBlockPos, world: MojangWorld): BlockNovaMaterial? {
+    internal fun getWorldGenMaterial(pos: MojangBlockPos, world: MojangWorld): NovaBlock? {
         val novaPos = pos.toNovaPos(world.world)
         val chunk = novaPos.chunkPos
-        return if (chunk.isLoaded()) (getBlockState(novaPos) as? NovaBlockState)?.material else pendingOrphanBlocks[chunk]?.get(novaPos)
+        return if (chunk.isLoaded()) (getBlockState(novaPos) as? NovaBlockState)?.block else pendingOrphanBlocks[chunk]?.get(novaPos)
     }
     
     @Synchronized

@@ -13,10 +13,10 @@ import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.potion.PotionEffectType
 import xyz.xenondevs.nova.item.behavior.Tool
+import xyz.xenondevs.nova.item.logic.PacketItems
 import xyz.xenondevs.nova.item.tool.ToolCategory
 import xyz.xenondevs.nova.item.tool.ToolTier
 import xyz.xenondevs.nova.item.tool.VanillaToolCategory
-import xyz.xenondevs.nova.material.PacketItems
 import xyz.xenondevs.nova.util.bukkitMirror
 import xyz.xenondevs.nova.util.eyeInWater
 import xyz.xenondevs.nova.util.nmsCopy
@@ -32,7 +32,7 @@ import xyz.xenondevs.nova.item.behavior.Damageable as NovaDamageable
  * Damages the tool in the [player's][Player] main hand as if they've broken a block.
  */
 fun Player.damageToolBreakBlock() = damageToolInMainHand {
-    val novaItem = it.novaMaterial?.novaItem
+    val novaItem = it.novaItem
     if (novaItem != null) {
         if (novaItem.hasBehavior(Tool::class)) {
             novaItem.getBehavior(NovaDamageable::class)?.options?.itemDamageOnBreakBlock ?: 0
@@ -44,7 +44,7 @@ fun Player.damageToolBreakBlock() = damageToolInMainHand {
  * Damages the tool in the [player's][Player] main hand as if they've attack an entity.
  */
 fun Player.damageToolAttackEntity() = damageToolInMainHand {
-    val novaItem = it.novaMaterial?.novaItem
+    val novaItem = it.novaItem
     if (novaItem != null) {
         if (novaItem.hasBehavior(Tool::class)) {
             novaItem.getBehavior(NovaDamageable::class)?.options?.itemDamageOnAttackEntity ?: 0
@@ -68,9 +68,9 @@ private inline fun Player.damageToolInMainHand(damageReceiver: (MojangStack) -> 
 object ToolUtils {
     
     fun isCorrectToolForDrops(block: Block, tool: ItemStack?): Boolean {
-        val novaBlock = BlockManager.getBlock(block.pos)
+        val novaBlock = BlockManager.getBlockState(block.pos)
         if (novaBlock != null) {
-            if (!novaBlock.material.requiresToolForDrops)
+            if (!novaBlock.block.options.requiresToolForDrops)
                 return true
         } else if (!requiresCorrectToolForDropsVanilla(block)) return true
         
@@ -166,7 +166,7 @@ object ToolUtils {
         when (player.gameMode) {
             
             GameMode.CREATIVE -> {
-                val canBreakBlocks = tool?.novaMaterial?.novaItem?.getBehavior(Tool::class)?.options?.canBreakBlocksInCreative
+                val canBreakBlocks = tool?.novaItem?.getBehavior(Tool::class)?.options?.canBreakBlocksInCreative
                     ?: (ToolCategory.ofItem(tool) as? VanillaToolCategory)?.canBreakBlocksInCreative
                     ?: (tool?.type != Material.DEBUG_STICK && tool?.type != Material.TRIDENT)
                 
@@ -227,14 +227,14 @@ object ToolUtils {
         if (itemStack == null)
             return 1.0
         
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null)
-            return novaMaterial.novaItem.getBehavior(Tool::class)?.options?.breakSpeed ?: 1.0
+        val novaItem = itemStack.novaItem
+        if (novaItem != null)
+            return novaItem.getBehavior(Tool::class)?.options?.breakSpeed ?: 1.0
         
         val vanillaToolCategory = ToolCategory.ofItem(itemStack) as? VanillaToolCategory
         if (vanillaToolCategory != null) {
             val itemType = itemStack.type
-            if (BlockManager.getBlock(block.pos) == null) {
+            if (BlockManager.getBlockState(block.pos) == null) {
                 val specialMultiplier = vanillaToolCategory.specialMultipliers[itemType]?.get(block.type)
                 if (specialMultiplier != null)
                     return specialMultiplier

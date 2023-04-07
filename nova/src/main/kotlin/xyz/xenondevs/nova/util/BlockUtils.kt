@@ -6,6 +6,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket
 import net.minecraft.network.protocol.game.ClientboundLevelEventPacket
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
@@ -42,17 +43,18 @@ import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.nmsutils.particle.block
 import xyz.xenondevs.nmsutils.particle.particle
 import xyz.xenondevs.nova.data.NamespacedId
+import xyz.xenondevs.nova.data.world.block.state.NovaBlockState
 import xyz.xenondevs.nova.integration.customitems.CustomItemServiceManager
-import xyz.xenondevs.nova.material.BlockNovaMaterial
-import xyz.xenondevs.nova.material.TileEntityNovaMaterial
 import xyz.xenondevs.nova.tileentity.network.fluid.FluidType
 import xyz.xenondevs.nova.util.item.ToolUtils
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.item.playPlaceSoundEffect
 import xyz.xenondevs.nova.util.item.soundGroup
 import xyz.xenondevs.nova.util.item.takeUnlessEmpty
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry
 import xyz.xenondevs.nova.world.block.BlockManager
+import xyz.xenondevs.nova.world.block.NovaBlock
+import xyz.xenondevs.nova.world.block.NovaTileEntityBlock
 import xyz.xenondevs.nova.world.block.context.BlockBreakContext
 import xyz.xenondevs.nova.world.block.context.BlockPlaceContext
 import xyz.xenondevs.nova.world.block.limits.TileEntityLimits
@@ -71,64 +73,70 @@ import net.minecraft.world.level.block.Block as MojangBlock
 // region block info
 
 /**
- * The [NamespacedId] of this block.
+ * The [NamespacedId] of this block, considering blocks from Nova, custom item services and vanilla.
  */
-val Block.id: NamespacedId
-    get() {
-        val pos = pos
-        val novaMaterial = BlockManager.getBlock(pos)
-        if (novaMaterial != null) {
-            return novaMaterial.id
-        }
-        
-        return CustomItemServiceManager.getId(this)?.let(NamespacedId::of)
-            ?: NamespacedId("minecraft", type.name.lowercase())
-    }
+val Block.id: ResourceLocation
+    get() = BlockManager.getBlockState(pos)?.id
+        ?: CustomItemServiceManager.getId(this)?.let { ResourceLocation.of(it, ':') }
+        ?: ResourceLocation("minecraft", type.name.lowercase())
 
 /**
- * The [BlockNovaMaterial] of this block.
+ * The [NovaBlockState] at the position of this [Block].
  */
-val Block.novaMaterial: BlockNovaMaterial?
-    get() = BlockManager.getBlock(pos)?.material
+val Block.novaBlockState: NovaBlockState?
+    get() = BlockManager.getBlockState(pos)
+
+/**
+ * The [NovaBlock] of the [NovaBlockState] at the position of this [Block].
+ */
+val Block.novaBlock: NovaBlock?
+    get() = BlockManager.getBlockState(pos)?.block
 
 /**
  * The block that is one y-level below the current one.
  */
-inline val Block.below: Block
+val Block.below: Block
     get() = world.getBlockAt(x, y - 1, z)
 
 /**
  * The block that is one y-level above the current one.
  */
-inline val Block.above: Block
+val Block.above: Block
     get() = world.getBlockAt(x, y + 1, z)
 
 /**
  * The location at the center of this block.
  */
-inline val Block.center: Location
+val Block.center: Location
     get() = Location(world, x + 0.5, y + 0.5, z + 0.5)
 
 /**
  * The hardness of this block, also considering the custom hardness of Nova blocks.
  */
 val Block.hardness: Double
-    get() = BlockManager.getBlock(pos)?.material?.hardness ?: type.hardness.toDouble()
+    get() = BlockManager.getBlockState(pos)?.block?.options?.hardness ?: type.hardness.toDouble()
 
 /**
  * The break texture for this block, also considering custom break textures of Nova blocks.
  */
 val Block.breakTexture: Material
-    get() = BlockManager.getBlock(pos)?.material?.breakParticles ?: type
+    get() {
+        val novaBlock = novaBlock
+        if (novaBlock != null) {
+            return novaBlock.options.breakParticles ?: Material.AIR
+        }
+        
+        return type
+    }
 
 /**
  * The sound group of this block, also considering custom sound groups of Nova blocks.
  */
 val Block.soundGroup: SoundGroup?
     get() {
-        val novaMaterial = BlockManager.getBlock(pos)?.material
-        if (novaMaterial != null) {
-            return novaMaterial.soundGroup
+        val novaBlock = novaBlock
+        if (novaBlock != null) {
+            return novaBlock.options.soundGroup
         }
         
         return SoundGroup.from(type.soundGroup)
@@ -180,12 +188,12 @@ val Block.sourceFluidType: FluidType?
  */
 fun Block.place(ctx: BlockPlaceContext, playSound: Boolean = true): Boolean {
     val item = ctx.item
-    val novaMaterial = item.novaMaterial
-    if (novaMaterial is BlockNovaMaterial) {
-        if (novaMaterial is TileEntityNovaMaterial && !TileEntityLimits.canPlace(ctx).allowed)
+    val novaBlock = item.novaItem?.block
+    if (novaBlock != null) {
+        if (novaBlock is NovaTileEntityBlock && !TileEntityLimits.canPlace(ctx).allowed)
             return false
         
-        BlockManager.placeBlock(novaMaterial, ctx, playSound)
+        BlockManager.placeBlockState(novaBlock, ctx, playSound)
         return true
     }
     
@@ -278,12 +286,12 @@ fun Block.remove(ctx: BlockBreakContext, playSound: Boolean, showParticles: Bool
 
 /**
  * Breaks this block naturally using the given [ctx].
- * 
+ *
  * This method works for vanilla blocks, blocks from Nova and blocks from custom item integrations.
  * Items will be dropped in the world, those drops depend on the source and tool defined in the [ctx].
  * If the source is a player, it will be as if the player broke the block.
  * The tool item stack will not be damaged.
- * 
+ *
  * @param ctx The [BlockBreakContext] to be used
  */
 fun Block.breakNaturally(ctx: BlockBreakContext) {
@@ -311,7 +319,7 @@ fun Block.breakNaturally(ctx: BlockBreakContext) {
 fun Block.remove(ctx: BlockBreakContext, breakEffects: Boolean = true): List<ItemStack> {
     return removeInternal(
         ctx,
-        ToolUtils.isCorrectToolForDrops(this, ctx.item), 
+        ToolUtils.isCorrectToolForDrops(this, ctx.item),
         breakEffects,
         true
     ).map { it.item.bukkitMirror }
@@ -324,9 +332,9 @@ internal fun Block.removeInternal(ctx: BlockBreakContext, drops: Boolean, breakE
         return itemEntities
     }
     
-    if (BlockManager.getBlock(pos) != null) {
-        val itemEntities = BlockManager.getDrops(this.location, ctx.source, ctx.item)!!.let(::createDroppedItemEntities)
-        BlockManager.removeBlockInternal(ctx, breakEffects, sendEffectsToBreaker)
+    if (BlockManager.getBlockState(pos) != null) {
+        val itemEntities = BlockManager.getDrops(ctx)!!.let(::createDroppedItemEntities)
+        BlockManager.removeBlockStateInternal(ctx, breakEffects, sendEffectsToBreaker)
         return itemEntities
     }
     
@@ -383,9 +391,9 @@ fun Block.getAllDrops(ctx: BlockBreakContext): List<ItemStack> {
     val tool = ctx.item
     CustomItemServiceManager.getDrops(this, tool)?.let { return it }
     
-    val novaBlockState = BlockManager.getBlock(pos)
+    val novaBlockState = BlockManager.getBlockState(pos)
     if (novaBlockState != null)
-        return novaBlockState.material.novaBlock.getDrops(novaBlockState, ctx)
+        return novaBlockState.block.logic.getDrops(novaBlockState, ctx)
     
     val drops = ArrayList<ItemStack>()
     val state = state
@@ -440,9 +448,9 @@ private fun Block.getMainHalf(): Block {
  * Gets the experience that would be dropped if the block were to be broken.
  */
 fun Block.getExp(ctx: BlockBreakContext): Int {
-    val novaState = BlockManager.getBlock(ctx.pos)
+    val novaState = BlockManager.getBlockState(ctx.pos)
     if (novaState != null)
-        return novaState.material.novaBlock.getExp(novaState, ctx)
+        return novaState.block.logic.getExp(novaState, ctx)
     
     val serverLevel = ctx.pos.world.serverLevel
     val mojangPos = ctx.pos.nmsPos
@@ -533,7 +541,7 @@ fun Block.playBreakSound() {
  * A different number will cause the breaking texture to disappear.
  */
 fun Block.setBreakStage(entityId: Int, stage: Int) {
-    val novaBlockState = BlockManager.getBlock(pos)
+    val novaBlockState = BlockManager.getBlockState(pos)
     if (novaBlockState != null) {
         BlockBreaking.setBreakStage(pos, entityId, stage)
     } else {

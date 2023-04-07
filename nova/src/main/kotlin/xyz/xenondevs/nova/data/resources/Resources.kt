@@ -1,7 +1,7 @@
 package xyz.xenondevs.nova.data.resources
 
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.Material
-import xyz.xenondevs.nova.data.NamespacedId
 import xyz.xenondevs.nova.data.config.PermanentStorage
 import xyz.xenondevs.nova.data.resources.builder.content.armor.info.ArmorTexture
 import xyz.xenondevs.nova.data.resources.builder.content.font.FontChar
@@ -11,7 +11,7 @@ import xyz.xenondevs.nova.data.resources.model.data.ItemModelData
 data class ModelData(
     val item: Map<Material, ItemModelData>? = null,
     val block: BlockModelData? = null,
-    val armor: NamespacedId? = null
+    val armor: ResourceLocation? = null
 )
 
 object Resources {
@@ -23,12 +23,12 @@ object Resources {
     internal lateinit var textureIconLookup: Map<String, FontChar>
     internal lateinit var languageLookup: Map<String, Map<String, String>>
     
-    internal fun updateModelDataLookup(modelDataLookup: Map<NamespacedId, ModelData>) {
+    internal fun updateModelDataLookup(modelDataLookup: Map<ResourceLocation, ModelData>) {
         this.modelDataLookup = modelDataLookup.mapKeysTo(HashMap()) { it.key.toString() }
         PermanentStorage.store("modelDataLookup", this.modelDataLookup)
     }
     
-    internal fun updateArmorDataLookup(armorDataLookup: Map<NamespacedId, ArmorTexture>) {
+    internal fun updateArmorDataLookup(armorDataLookup: Map<ResourceLocation, ArmorTexture>) {
         this.armorDataLookup = armorDataLookup.mapKeysTo(HashMap()) { it.key.toString() }
         PermanentStorage.store("armorDataLookup", this.armorDataLookup)
     }
@@ -53,7 +53,7 @@ object Resources {
         PermanentStorage.store("languageLookup", languageLookup)
     }
     
-    fun getModelData(id: NamespacedId): ModelData {
+    fun getModelData(id: ResourceLocation): ModelData {
         return modelDataLookup[id.toString()]!!
     }
     
@@ -65,7 +65,7 @@ object Resources {
         return modelDataLookup[id]!!
     }
     
-    fun getModelDataOrNull(id: NamespacedId): ModelData? {
+    fun getModelDataOrNull(id: ResourceLocation): ModelData? {
         return modelDataLookup[id.toString()]
     }
     
@@ -77,7 +77,7 @@ object Resources {
         return modelDataLookup[id]
     }
     
-    fun getArmorData(id: NamespacedId): ArmorTexture {
+    fun getArmorData(id: ResourceLocation): ArmorTexture {
         return armorDataLookup[id.toString()]!!
     }
     
@@ -89,7 +89,7 @@ object Resources {
         return armorDataLookup[id]!!
     }
     
-    fun getArmorDataOrNull(id: NamespacedId): ArmorTexture? {
+    fun getArmorDataOrNull(id: ResourceLocation): ArmorTexture? {
         return armorDataLookup[id.toString()]
     }
     
@@ -101,7 +101,7 @@ object Resources {
         return armorDataLookup[id]
     }
     
-    fun getGuiChar(id: NamespacedId): FontChar {
+    fun getGuiChar(id: ResourceLocation): FontChar {
         return guiDataLookup[id.toString()]!!
     }
     
@@ -113,7 +113,7 @@ object Resources {
         return guiDataLookup[id]!!
     }
     
-    fun getGuiCharOrNull(id: NamespacedId): FontChar? {
+    fun getGuiCharOrNull(id: ResourceLocation): FontChar? {
         return guiDataLookup[id.toString()]
     }
     
@@ -125,7 +125,7 @@ object Resources {
         return guiDataLookup[id]
     }
     
-    fun getWailaIconChar(id: NamespacedId): FontChar {
+    fun getWailaIconChar(id: ResourceLocation): FontChar {
         return wailaDataLookup[id.toString()]!!
     }
     
@@ -137,7 +137,7 @@ object Resources {
         return wailaDataLookup[id]!!
     }
     
-    fun getWailaIconCharOrNull(id: NamespacedId): FontChar? {
+    fun getWailaIconCharOrNull(id: ResourceLocation): FontChar? {
         return wailaDataLookup[id.toString()]
     }
     
@@ -149,7 +149,7 @@ object Resources {
         return wailaDataLookup[id]
     }
     
-    fun getTextureIconChar(id: NamespacedId): FontChar {
+    fun getTextureIconChar(id: ResourceLocation): FontChar {
         return textureIconLookup[id.toString()]!!
     }
     
@@ -161,7 +161,7 @@ object Resources {
         return textureIconLookup[id]!!
     }
     
-    fun getTextureIconCharOrNull(id: NamespacedId): FontChar? {
+    fun getTextureIconCharOrNull(id: ResourceLocation): FontChar? {
         return textureIconLookup[id.toString()]
     }
     

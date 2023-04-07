@@ -28,14 +28,14 @@ import xyz.xenondevs.nova.data.resources.builder.ResourcePackBuilder
 import xyz.xenondevs.nova.data.resources.upload.AutoUploadManager
 import xyz.xenondevs.nova.data.world.WorldDataManager
 import xyz.xenondevs.nova.data.world.block.state.NovaBlockState
-import xyz.xenondevs.nova.material.AdvancedTooltips
-import xyz.xenondevs.nova.material.ItemNovaMaterial
-import xyz.xenondevs.nova.material.NovaMaterialRegistry
+import xyz.xenondevs.nova.item.NovaItem
+import xyz.xenondevs.nova.item.logic.AdvancedTooltips
+import xyz.xenondevs.nova.registry.NovaRegistries
+import xyz.xenondevs.nova.registry.NovaRegistries.NETWORK_TYPE
 import xyz.xenondevs.nova.tileentity.TileEntityManager
 import xyz.xenondevs.nova.tileentity.network.NetworkDebugger
 import xyz.xenondevs.nova.tileentity.network.NetworkManager
 import xyz.xenondevs.nova.tileentity.network.NetworkType
-import xyz.xenondevs.nova.tileentity.network.NetworkTypeRegistry
 import xyz.xenondevs.nova.tileentity.vanilla.VanillaTileEntityManager
 import xyz.xenondevs.nova.ui.menu.item.creative.ItemsWindow
 import xyz.xenondevs.nova.ui.waila.WailaManager
@@ -46,7 +46,7 @@ import xyz.xenondevs.nova.util.item.novaCompoundOrNull
 import xyz.xenondevs.nova.util.item.takeUnlessEmpty
 import xyz.xenondevs.nova.util.runAsyncTask
 import xyz.xenondevs.nova.world.block.BlockManager
-import xyz.xenondevs.nova.world.block.behavior.BlockBehaviorManager
+import xyz.xenondevs.nova.world.block.backingstate.BackingStateManager
 import xyz.xenondevs.nova.world.block.context.BlockBreakContext
 import xyz.xenondevs.nova.world.block.hitbox.HitboxManager
 import xyz.xenondevs.nova.world.chunkPos
@@ -63,7 +63,7 @@ internal object NovaCommand : Command("nova") {
                 .requiresPermission("nova.command.give")
                 .then(argument("player", EntityArgument.players())
                     .apply {
-                        NovaMaterialRegistry.values.asSequence()
+                        NovaRegistries.ITEM.asSequence()
                             .filterNot { it.isHidden }
                             .forEach { material ->
                                 then(literal(material.id.toString())
@@ -96,7 +96,7 @@ internal object NovaCommand : Command("nova") {
                 .then(literal("showNetwork")
                     .requiresPlayer()
                     .apply {
-                        NetworkTypeRegistry.types.forEach { type ->
+                        NETWORK_TYPE.forEach { type ->
                             then(literal(type.id.toString())
                                 .executesCatching { toggleNetworkDebugging(it, type) })
                         }
@@ -144,7 +144,7 @@ internal object NovaCommand : Command("nova") {
     }
     
     private fun updateChunkSearchId(ctx: CommandContext<CommandSourceStack>) {
-        BlockBehaviorManager.updateChunkSearchId()
+        BackingStateManager.updateChunkSearchId()
         ctx.source.sendSuccess(Component.translatable("command.nova.update_chunk_search_id.success", NamedTextColor.GRAY))
     }
     
@@ -210,18 +210,18 @@ internal object NovaCommand : Command("nova") {
         }
     }
     
-    private fun giveTo(ctx: CommandContext<CommandSourceStack>, material: ItemNovaMaterial) =
-        giveTo(ctx, material, ctx["amount"])
+    private fun giveTo(ctx: CommandContext<CommandSourceStack>, item: NovaItem) =
+        giveTo(ctx, item, ctx["amount"])
     
-    private fun giveTo(ctx: CommandContext<CommandSourceStack>, material: ItemNovaMaterial, amount: Int) {
-        val itemName = material.localizedName.ifBlank { material.id.toString() }
+    private fun giveTo(ctx: CommandContext<CommandSourceStack>, item: NovaItem, amount: Int) {
+        val itemName = item.localizedName.ifBlank { item.id.toString() }
         
         val targetPlayers = ctx.getArgument("player", EntitySelector::class.java).findPlayers(ctx.source)
         
         if (targetPlayers.isNotEmpty()) {
             targetPlayers.forEach {
                 val player = it.bukkitEntity
-                player.inventory.addItemCorrectly(material.createItemStack(amount))
+                player.inventory.addItemCorrectly(item.createItemStack(amount))
                 
                 ctx.source.sendSuccess(Component.translatable(
                     "command.nova.give.success",
@@ -238,7 +238,7 @@ internal object NovaCommand : Command("nova") {
         val player = ctx.player
         val chunks = player.location.chunk.getSurroundingChunks(ctx["range"], true)
         val novaBlocks = chunks.flatMap { WorldDataManager.getBlockStates(it.pos).values.filterIsInstance<NovaBlockState>() }
-        novaBlocks.forEach { BlockManager.removeBlock(BlockBreakContext(it.pos)) }
+        novaBlocks.forEach { BlockManager.removeBlockState(BlockBreakContext(it.pos)) }
         
         ctx.source.sendSuccess(Component.translatable(
             "command.nova.remove_tile_entities.success",
@@ -289,7 +289,7 @@ internal object NovaCommand : Command("nova") {
         if (location != null) {
             val tileEntity = TileEntityManager.getTileEntity(location, true)
             if (tileEntity != null) {
-                sendSuccess(tileEntity.material.localizedName, tileEntity.data)
+                sendSuccess(tileEntity.block.localizedName, tileEntity.data)
             } else {
                 val vanillaTileEntity = VanillaTileEntityManager.getTileEntityAt(location)
                 if (vanillaTileEntity != null) sendSuccess(vanillaTileEntity.block.type.name, vanillaTileEntity.data)
@@ -334,7 +334,7 @@ internal object NovaCommand : Command("nova") {
         NetworkDebugger.toggleDebugger(type, player)
         
         ctx.source.sendSuccess(Component.translatable(
-            "command.nova.network_debug." + type.id.toString("."),
+            "command.nova.network_debug." + type.id.toLanguageKey(),
             NamedTextColor.GRAY
         ))
     }

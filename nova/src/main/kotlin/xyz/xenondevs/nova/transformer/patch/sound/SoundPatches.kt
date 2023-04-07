@@ -21,7 +21,7 @@ import xyz.xenondevs.nova.item.behavior.Wearable
 import xyz.xenondevs.nova.transformer.MultiTransformer
 import xyz.xenondevs.nova.util.MINECRAFT_SERVER
 import xyz.xenondevs.nova.util.forcePacketBroadcast
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.item.soundGroup
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry
 import xyz.xenondevs.nova.util.soundGroup
@@ -159,9 +159,9 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
 
     @JvmStatic
     fun getEquipSound(itemStack: MojangStack): SoundEvent? {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            val soundEventName = novaMaterial.novaItem.getBehavior(Wearable::class)?.options?.equipSound
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            val soundEventName = novaItem.getBehavior(Wearable::class)?.options?.equipSound
                 ?: return null
             return SoundEvent.createVariableRangeEvent(ResourceLocation.tryParse(soundEventName))
         }

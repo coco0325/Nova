@@ -1,16 +1,5 @@
 package xyz.xenondevs.nova.integration.protection
 
-import com.destroystokyo.paper.ClientOption
-import com.destroystokyo.paper.Title
-import com.destroystokyo.paper.block.TargetBlockInfo
-import com.destroystokyo.paper.entity.TargetEntityInfo
-import com.destroystokyo.paper.profile.PlayerProfile
-import io.papermc.paper.entity.LookAnchor
-import io.papermc.paper.entity.TeleportFlag
-import io.papermc.paper.threadedregions.scheduler.EntityScheduler
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.util.TriState
-import net.md_5.bungee.api.chat.BaseComponent
 import org.bukkit.DyeColor
 import org.bukkit.Effect
 import org.bukkit.EntityEffect
@@ -41,13 +30,18 @@ import org.bukkit.block.Sign
 import org.bukkit.block.data.BlockData
 import org.bukkit.conversations.Conversation
 import org.bukkit.conversations.ConversationAbandonedEvent
-import org.bukkit.entity.*
+import org.bukkit.entity.Entity
+import org.bukkit.entity.EntityCategory
+import org.bukkit.entity.EntityType
+import org.bukkit.entity.Firework
+import org.bukkit.entity.LivingEntity
+import org.bukkit.entity.Player
+import org.bukkit.entity.Pose
+import org.bukkit.entity.Projectile
+import org.bukkit.entity.SpawnCategory
+import org.bukkit.entity.Villager
 import org.bukkit.entity.memory.MemoryKey
-import org.bukkit.event.entity.CreatureSpawnEvent
 import org.bukkit.event.entity.EntityDamageEvent
-import org.bukkit.event.inventory.InventoryCloseEvent
-import org.bukkit.event.player.PlayerKickEvent
-import org.bukkit.event.player.PlayerResourcePackStatusEvent
 import org.bukkit.event.player.PlayerTeleportEvent
 import org.bukkit.inventory.EntityEquipment
 import org.bukkit.inventory.EquipmentSlot
@@ -68,7 +62,6 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scoreboard.Scoreboard
 import org.bukkit.util.BoundingBox
-import org.bukkit.util.Consumer
 import org.bukkit.util.RayTraceResult
 import org.bukkit.util.Vector
 import org.jetbrains.annotations.Contract
@@ -111,47 +104,7 @@ internal class FakeOnlinePlayer(
     override fun getLocale(): String {
         return "en_us"
     }
-
-    override fun getAffectsSpawning(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun setAffectsSpawning(affects: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getViewDistance(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setViewDistance(viewDistance: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getSimulationDistance(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setSimulationDistance(simulationDistance: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getNoTickViewDistance(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setNoTickViewDistance(viewDistance: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getSendViewDistance(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setSendViewDistance(viewDistance: Int) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getLocation(): Location {
         return location
     }
@@ -171,23 +124,7 @@ internal class FakeOnlinePlayer(
     override fun setDisplayName(name: String?) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun playerListName(name: Component?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun playerListName(): Component {
-        TODO("Not yet implemented")
-    }
-
-    override fun playerListHeader(): Component? {
-        TODO("Not yet implemented")
-    }
-
-    override fun playerListFooter(): Component? {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getPlayerListName(): String {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -215,15 +152,7 @@ internal class FakeOnlinePlayer(
     override fun setPlayerListHeaderFooter(header: String?, footer: String?) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun setPlayerListHeaderFooter(header: Array<out BaseComponent?>?, footer: Array<out BaseComponent?>?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setPlayerListHeaderFooter(header: BaseComponent?, footer: BaseComponent?) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun setCompassTarget(loc: Location) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -235,23 +164,7 @@ internal class FakeOnlinePlayer(
     override fun getAddress(): InetSocketAddress? {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getProtocolVersion(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun getVirtualHost(): InetSocketAddress? {
-        TODO("Not yet implemented")
-    }
-
-    override fun displayName(): Component {
-        TODO("Not yet implemented")
-    }
-
-    override fun displayName(displayName: Component?) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun sendRawMessage(message: String) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -259,19 +172,7 @@ internal class FakeOnlinePlayer(
     override fun kickPlayer(message: String?) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun kick() {
-        TODO("Not yet implemented")
-    }
-
-    override fun kick(message: Component?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun kick(message: Component?, cause: PlayerKickEvent.Cause) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun chat(msg: String) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -415,15 +316,15 @@ internal class FakeOnlinePlayer(
     override fun sendBlockDamage(loc: Location, progress: Float) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendBlockDamage(loc: Location, progress: Float, sourceId: Int) {
+    
+    override fun sendBlockDamage(location: Location, progress: Float, entity: Entity) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendMultiBlockChange(blockChanges: MutableMap<Location, BlockData>, suppressLightUpdates: Boolean) {
-        TODO("Not yet implemented")
+    
+    override fun sendBlockDamage(location: Location, progress: Float, sourceId: Int) {
+        throw UnsupportedOperationException("Player is not online")
     }
-
+    
     override fun sendEquipmentChange(entity: LivingEntity, slot: EquipmentSlot, item: ItemStack?) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -431,65 +332,29 @@ internal class FakeOnlinePlayer(
     override fun sendEquipmentChange(entity: LivingEntity, items: MutableMap<EquipmentSlot, ItemStack>) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendSignChange(
-        loc: Location,
-        lines: MutableList<out Component>?,
-        dyeColor: DyeColor,
-        hasGlowingText: Boolean
-    ) {
-        TODO("Not yet implemented")
+    
+    @Throws(IllegalArgumentException::class)
+    override fun sendSignChange(loc: Location, lines: Array<String>?) {
+        throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendSignChange(loc: Location, lines: Array<out String?>?) {
-        TODO("Not yet implemented")
+    
+    @Throws(IllegalArgumentException::class)
+    override fun sendSignChange(loc: Location, lines: Array<String>?, dyeColor: DyeColor) {
+        throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendSignChange(loc: Location, lines: Array<out String?>?, dyeColor: DyeColor) {
-        TODO("Not yet implemented")
+    
+    override fun sendSignChange(loc: Location, lines: Array<out String>?, dyeColor: DyeColor, hasGlowingText: Boolean) {
+        throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendSignChange(
-        loc: Location,
-        lines: Array<out String?>?,
-        dyeColor: DyeColor,
-        hasGlowingText: Boolean
-    ) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun sendMap(map: MapView) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun showWinScreen() {
-        TODO("Not yet implemented")
+    
+    override fun sendHurtAnimation(yaw: Float) {
+        throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun hasSeenWinScreen(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun setHasSeenWinScreen(hasSeenWinScreen: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setTitleTimes(fadeInTicks: Int, stayTicks: Int, fadeOutTicks: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setSubtitle(subtitle: Array<out BaseComponent>?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setSubtitle(subtitle: BaseComponent?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendTitle(title: Title) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun addCustomChatCompletions(completions: MutableCollection<String>) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -545,15 +410,7 @@ internal class FakeOnlinePlayer(
     override fun giveExp(amount: Int) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun giveExp(amount: Int, applyMending: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun applyMending(amount: Int): Int {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun giveExpLevels(amount: Int) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -597,15 +454,7 @@ internal class FakeOnlinePlayer(
     override fun setAllowFlight(flight: Boolean) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun setFlyingFallDamage(flyingFallDamage: TriState) {
-        TODO("Not yet implemented")
-    }
-
-    override fun hasFlyingFallDamage(): TriState {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun hidePlayer(player: Player) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -687,23 +536,7 @@ internal class FakeOnlinePlayer(
     override fun setResourcePack(url: String, hash: ByteArray?, prompt: String?, force: Boolean) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun setResourcePack(url: String, hash: ByteArray?, prompt: Component?, force: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setResourcePack(url: String, hash: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setResourcePack(url: String, hash: String, required: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun setResourcePack(url: String, hash: String, required: Boolean, resourcePackPrompt: Component?) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getScoreboard(): Scoreboard {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -737,15 +570,7 @@ internal class FakeOnlinePlayer(
     override fun getHealthScale(): Double {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendHealthUpdate(health: Double, foodLevel: Int, saturationLevel: Float) {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendHealthUpdate() {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getSpectatorTarget(): Entity? {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -761,15 +586,7 @@ internal class FakeOnlinePlayer(
     override fun sendTitle(title: String?, subtitle: String?, fadeIn: Int, stay: Int, fadeOut: Int) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun updateTitle(title: Title) {
-        TODO("Not yet implemented")
-    }
-
-    override fun hideTitle() {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun resetTitle() {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -829,11 +646,7 @@ internal class FakeOnlinePlayer(
     override fun getClientViewDistance(): Int {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun locale(): Locale {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getPing(): Int {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -857,115 +670,11 @@ internal class FakeOnlinePlayer(
     override fun isAllowingServerListings(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getResourcePackStatus(): PlayerResourcePackStatusEvent.Status? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getResourcePackHash(): String? {
-        TODO("Not yet implemented")
-    }
-
-    override fun hasResourcePack(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun setPlayerProfile(profile: PlayerProfile) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getCooldownPeriod(): Float {
-        TODO("Not yet implemented")
-    }
-
-    override fun getCooledAttackStrength(adjustTicks: Float): Float {
-        TODO("Not yet implemented")
-    }
-
-    override fun resetCooldown() {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T : Any?> getClientOption(option: ClientOption<T>): T {
-        TODO("Not yet implemented")
-    }
-
-    override fun boostElytra(firework: ItemStack): Firework? {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendOpLevel(level: Byte) {
-        TODO("Not yet implemented")
-    }
-
-    override fun addAdditionalChatCompletions(completions: MutableCollection<String>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun removeAdditionalChatCompletions(completions: MutableCollection<String>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getClientBrandName(): String? {
-        TODO("Not yet implemented")
-    }
-
-    override fun lookAt(x: Double, y: Double, z: Double, playerAnchor: LookAnchor) {
-        TODO("Not yet implemented")
-    }
-
-    override fun lookAt(entity: Entity, playerAnchor: LookAnchor, entityAnchor: LookAnchor) {
-        TODO("Not yet implemented")
-    }
-
-    override fun showElderGuardian(silent: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getWardenWarningCooldown(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setWardenWarningCooldown(cooldown: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getWardenTimeSinceLastWarning(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setWardenTimeSinceLastWarning(time: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getWardenWarningLevel(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setWardenWarningLevel(warningLevel: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun increaseWardenWarningLevel() {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun spigot(): Player.Spigot {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun name(): Component {
-        TODO("Not yet implemented")
-    }
-
-    override fun customName(): Component? {
-        TODO("Not yet implemented")
-    }
-
-    override fun customName(customName: Component?) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getInventory(): PlayerInventory {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1017,39 +726,11 @@ internal class FakeOnlinePlayer(
     override fun openMerchant(merchant: Merchant, force: Boolean): InventoryView? {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun openAnvil(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
-    override fun openCartographyTable(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
-    override fun openGrindstone(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
-    override fun openLoom(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
-    override fun openSmithingTable(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
-    override fun openStonecutter(location: Location?, force: Boolean): InventoryView? {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun closeInventory() {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun closeInventory(reason: InventoryCloseEvent.Reason) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getItemInHand(): ItemStack {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1077,23 +758,11 @@ internal class FakeOnlinePlayer(
     override fun setCooldown(material: Material, ticks: Int) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun isDeeplySleeping(): Boolean {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getSleepTicks(): Int {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getPotentialBedLocation(): Location? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getFishHook(): FishHook? {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun sleep(location: Location, force: Boolean): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1121,59 +790,7 @@ internal class FakeOnlinePlayer(
     override fun isHandRaised(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getHandRaised(): EquipmentSlot {
-        TODO("Not yet implemented")
-    }
-
-    override fun isJumping(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun setJumping(jumping: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun playPickupItemAnimation(item: Item, quantity: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getHurtDirection(): Float {
-        TODO("Not yet implemented")
-    }
-
-    override fun setHurtDirection(hurtDirection: Float) {
-        TODO("Not yet implemented")
-    }
-
-    override fun knockback(strength: Double, directionX: Double, directionZ: Double) {
-        TODO("Not yet implemented")
-    }
-
-    override fun broadcastSlotBreak(slot: EquipmentSlot) {
-        TODO("Not yet implemented")
-    }
-
-    override fun broadcastSlotBreak(slot: EquipmentSlot, players: MutableCollection<Player>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun damageItemStack(stack: ItemStack, amount: Int): ItemStack {
-        TODO("Not yet implemented")
-    }
-
-    override fun damageItemStack(slot: EquipmentSlot, amount: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getBodyYaw(): Float {
-        TODO("Not yet implemented")
-    }
-
-    override fun setBodyYaw(bodyYaw: Float) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getItemInUse(): ItemStack? {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1181,15 +798,7 @@ internal class FakeOnlinePlayer(
     override fun getExpToLevel(): Int {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun releaseLeftShoulderEntity(): Entity? {
-        TODO("Not yet implemented")
-    }
-
-    override fun releaseRightShoulderEntity(): Entity? {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getAttackCooldown(): Float {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1313,35 +922,7 @@ internal class FakeOnlinePlayer(
     override fun getTargetBlock(transparent: Set<Material>?, maxDistance: Int): Block {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getTargetBlock(maxDistance: Int, fluidMode: TargetBlockInfo.FluidMode): Block? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTargetBlockFace(maxDistance: Int, fluidMode: TargetBlockInfo.FluidMode): BlockFace? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTargetBlockFace(maxDistance: Int, fluidMode: FluidCollisionMode): BlockFace? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTargetBlockInfo(maxDistance: Int, fluidMode: TargetBlockInfo.FluidMode): TargetBlockInfo? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTargetEntity(maxDistance: Int, ignoreBlocks: Boolean): Entity? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTargetEntityInfo(maxDistance: Int, ignoreBlocks: Boolean): TargetEntityInfo? {
-        TODO("Not yet implemented")
-    }
-
-    override fun rayTraceEntities(maxDistance: Int, ignoreBlocks: Boolean): RayTraceResult? {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getLastTwoTargetBlocks(transparent: Set<Material>?, maxDistance: Int): List<Block> {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1393,27 +974,7 @@ internal class FakeOnlinePlayer(
     override fun setArrowsInBody(count: Int) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun setArrowsInBody(count: Int, fireEvent: Boolean) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getBeeStingerCooldown(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setBeeStingerCooldown(ticks: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getBeeStingersInBody(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setBeeStingersInBody(count: Int) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getMaximumNoDamageTicks(): Int {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1441,11 +1002,7 @@ internal class FakeOnlinePlayer(
     override fun getKiller(): Player? {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun setKiller(killer: Player?) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun addPotionEffect(effect: PotionEffect): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1477,11 +1034,7 @@ internal class FakeOnlinePlayer(
     override fun hasLineOfSight(other: Entity): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun hasLineOfSight(location: Location): Boolean {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getRemoveWhenFarAway(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1490,7 +1043,7 @@ internal class FakeOnlinePlayer(
         throw UnsupportedOperationException("Player is not online")
     }
     
-    override fun getEquipment(): EntityEquipment {
+    override fun getEquipment(): EntityEquipment? {
         throw UnsupportedOperationException("Player is not online")
     }
     
@@ -1626,47 +1179,11 @@ internal class FakeOnlinePlayer(
     override fun isInvisible(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun getArrowsStuck(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setArrowsStuck(arrows: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getShieldBlockingDelay(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun setShieldBlockingDelay(delay: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getActiveItem(): ItemStack {
-        TODO("Not yet implemented")
-    }
-
-    override fun clearActiveItem() {
-        TODO("Not yet implemented")
-    }
-
-    override fun getItemUseRemainingTime(): Int {
-        TODO("Not yet implemented")
-    }
-
-    override fun getHandRaisedTime(): Int {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun getAttribute(attribute: Attribute): AttributeInstance? {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun registerAttribute(attribute: Attribute) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun damage(amount: Double) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1735,15 +1252,7 @@ internal class FakeOnlinePlayer(
     override fun setRotation(yaw: Float, pitch: Float) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun teleport(
-        location: Location,
-        cause: PlayerTeleportEvent.TeleportCause,
-        vararg teleportFlags: TeleportFlag
-    ): Boolean {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun teleport(location: Location): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -1803,15 +1312,7 @@ internal class FakeOnlinePlayer(
     override fun isFrozen(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun isFreezeTickingLocked(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun lockFreezeTicks(locked: Boolean) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun remove() {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -2003,79 +1504,7 @@ internal class FakeOnlinePlayer(
     override fun getSpawnCategory(): SpawnCategory {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun teamDisplayName(): Component {
-        TODO("Not yet implemented")
-    }
-
-    override fun getOrigin(): Location? {
-        TODO("Not yet implemented")
-    }
-
-    override fun fromMobSpawner(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun getEntitySpawnReason(): CreatureSpawnEvent.SpawnReason {
-        TODO("Not yet implemented")
-    }
-
-    override fun isUnderWater(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInRain(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInBubbleColumn(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInWaterOrRain(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInWaterOrBubbleColumn(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInWaterOrRainOrBubbleColumn(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInLava(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isTicking(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun getTrackedPlayers(): MutableSet<Player> {
-        TODO("Not yet implemented")
-    }
-
-    override fun spawnAt(location: Location, reason: CreatureSpawnEvent.SpawnReason): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun isInPowderedSnow(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun collidesAt(location: Location): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun wouldCollideUsing(boundingBox: BoundingBox): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun getScheduler(): EntityScheduler {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun setMetadata(metadataKey: String, newMetadataValue: MetadataValue) {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -2107,47 +1536,7 @@ internal class FakeOnlinePlayer(
     override fun sendMessage(sender: UUID?, messages: Array<String>) {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun sendActionBar(message: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendActionBar(alternateChar: Char, message: String) {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendActionBar(vararg message: BaseComponent) {
-        TODO("Not yet implemented")
-    }
-
-    override fun showTitle(title: Array<out BaseComponent?>?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun showTitle(title: BaseComponent?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun showTitle(
-        title: Array<out BaseComponent?>?,
-        subtitle: Array<out BaseComponent?>?,
-        fadeInTicks: Int,
-        stayTicks: Int,
-        fadeOutTicks: Int
-    ) {
-        TODO("Not yet implemented")
-    }
-
-    override fun showTitle(
-        title: BaseComponent?,
-        subtitle: BaseComponent?,
-        fadeInTicks: Int,
-        stayTicks: Int,
-        fadeOutTicks: Int
-    ) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun addAttachment(plugin: Plugin, name: String, value: Boolean): PermissionAttachment {
         throw UnsupportedOperationException("Player is not online")
     }
@@ -2195,23 +1584,7 @@ internal class FakeOnlinePlayer(
     override fun <T : Projectile> launchProjectile(projectile: Class<out T?>, velocity: Vector?): T {
         throw UnsupportedOperationException("Player is not online")
     }
-
-    override fun <T : Projectile?> launchProjectile(
-        projectile: Class<out T>,
-        velocity: Vector?,
-        function: Consumer<T>?
-    ): T {
-        TODO("Not yet implemented")
-    }
-
-    override fun getFrictionState(): TriState {
-        TODO("Not yet implemented")
-    }
-
-    override fun setFrictionState(state: TriState) {
-        TODO("Not yet implemented")
-    }
-
+    
     override fun isConversing(): Boolean {
         throw UnsupportedOperationException("Player is not online")
     }

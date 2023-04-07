@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemDisplayContext
 import org.bukkit.Location
 import org.joml.Quaternionf
 import org.joml.Vector3f
-import xyz.xenondevs.nova.material.ItemNovaMaterial
+import xyz.xenondevs.nova.item.NovaItem
 import xyz.xenondevs.nova.util.nmsCopy
 import xyz.xenondevs.nova.world.fakeentity.impl.FakeItemDisplay
 import net.minecraft.world.item.ItemStack as MojangStack
@@ -41,7 +41,7 @@ data class Model(
     ) : this(itemStack.nmsCopy, location, constraints, translation, scale, leftRotation, rightRotation, brightness, width, height, glowColor)
     
     constructor(
-        material: ItemNovaMaterial,
+        item: NovaItem,
         location: Location,
         subId: Int = 0,
         constraints: Display.BillboardConstraints = Display.BillboardConstraints.FIXED,
@@ -53,7 +53,7 @@ data class Model(
         width: Float = 0f,
         height: Float = 0f,
         glowColor: Int = -1
-    ) : this(material.clientsideProviders[subId].get(), location, constraints, translation, scale, leftRotation, rightRotation, brightness, width, height, glowColor)
+    ) : this(item.clientsideProviders[subId].get(), location, constraints, translation, scale, leftRotation, rightRotation, brightness, width, height, glowColor)
     
     fun createFakeItemDisplay(autoRegister: Boolean = true): FakeItemDisplay =
         FakeItemDisplay(location, autoRegister) { _, data ->

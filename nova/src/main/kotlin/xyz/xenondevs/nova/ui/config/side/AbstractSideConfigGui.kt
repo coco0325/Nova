@@ -1,3 +1,5 @@
+@file:Suppress("LeakingThis")
+
 package xyz.xenondevs.nova.ui.config.side
 
 import net.kyori.adventure.text.Component
@@ -14,7 +16,7 @@ import xyz.xenondevs.invui.item.builder.addLoreLines
 import xyz.xenondevs.invui.item.builder.setDisplayName
 import xyz.xenondevs.invui.item.impl.AbstractItem
 import xyz.xenondevs.nova.data.world.block.property.Directional
-import xyz.xenondevs.nova.material.CoreGuiMaterial
+import xyz.xenondevs.nova.item.DefaultGuiItems
 import xyz.xenondevs.nova.tileentity.TileEntity
 import xyz.xenondevs.nova.tileentity.network.EndPointDataHolder
 import xyz.xenondevs.nova.tileentity.network.NetworkConnectionType
@@ -83,16 +85,16 @@ internal abstract class AbstractSideConfigGui<H : EndPointDataHolder>(
             val connectionType = holder.connectionConfig[blockFace]!! // fixme: Unsafe network value access. Should only be accessed from NetworkManager thread.
             return when (connectionType) {
                 NetworkConnectionType.NONE ->
-                    CoreGuiMaterial.GRAY_BTN.createClientsideItemBuilder()
+                    DefaultGuiItems.GRAY_BTN.createClientsideItemBuilder()
                         .addLoreLines(Component.translatable("menu.nova.side_config.none", NamedTextColor.GRAY))
                 NetworkConnectionType.EXTRACT ->
-                    CoreGuiMaterial.ORANGE_BTN.createClientsideItemBuilder()
+                    DefaultGuiItems.ORANGE_BTN.createClientsideItemBuilder()
                         .addLoreLines(Component.translatable( "menu.nova.side_config.output", NamedTextColor.GOLD))
                 NetworkConnectionType.INSERT ->
-                    CoreGuiMaterial.BLUE_BTN.createClientsideItemBuilder()
+                    DefaultGuiItems.BLUE_BTN.createClientsideItemBuilder()
                         .addLoreLines(Component.translatable("menu.nova.side_config.input", NamedTextColor.AQUA))
                 NetworkConnectionType.BUFFER ->
-                    CoreGuiMaterial.GREEN_BTN.createClientsideItemBuilder()
+                    DefaultGuiItems.GREEN_BTN.createClientsideItemBuilder()
                         .addLoreLines(Component.translatable("menu.nova.side_config.input_output", NamedTextColor.GREEN))
             }.setDisplayName(getSideName(blockSide, blockFace))
         }

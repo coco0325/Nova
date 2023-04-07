@@ -11,8 +11,9 @@ import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.config.configReloadable
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.util.component.adventure.chars
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -35,10 +36,11 @@ data class CharOptions(
 
 private val LOAD_CHAR_SIZES_ON_STARTUP by configReloadable { DEFAULT_CONFIG.getBoolean("performance.load_char_sizes_on_startup") }
 
-object CharSizes : Initializable() {
-    
-    override val initializationStage = InitializationStage.POST_WORLD_ASYNC
-    override val dependsOn = setOf(ResourceGeneration.PostWorld)
+@InternalInit(
+    stage = InitializationStage.POST_WORLD_ASYNC,
+    dependsOn = [ResourceGeneration.PostWorld::class]
+)
+object CharSizes {
     
     private val CHAR_SIZES_DIR = File(NOVA.dataFolder, ".internal_data/char_sizes/")
     private val loadedTables = HashMap<String, CharSizeTable>()
@@ -110,18 +112,18 @@ object CharSizes : Initializable() {
      * Calculates the [ComponentSize] of the given [component] under [lang].
      */
     fun calculateComponentSize(component: Component, lang: String): ComponentSize {
-        //return componentCache.get(component to lang) {
-        return calculateComponentSize(
-            component.chars(lang)
-                .map {
-                    CharOptions(
-                        it.char,
-                        it.style.font()?.asString() ?: "minecraft:default",
-                        it.style.hasDecoration(TextDecoration.BOLD)
-                    )
-                }
-        )
-        //}
+        return componentCache.get(component to lang) {
+            calculateComponentSize(
+                component.chars(lang)
+                    .map {
+                        CharOptions(
+                            it.char,
+                            it.style.font()?.asString() ?: "minecraft:default",
+                            it.style.hasDecoration(TextDecoration.BOLD)
+                        )
+                    }
+            )
+        }
     }
     
     /**
@@ -157,7 +159,8 @@ object CharSizes : Initializable() {
         return ComponentSize(width, yRangeMin..yRangeMax)
     }
     
-    override fun init() {
+    @InitFun
+    private fun init() {
         if (LOAD_CHAR_SIZES_ON_STARTUP) {
             val service = Executors.newCachedThreadPool()
             

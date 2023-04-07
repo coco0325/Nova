@@ -16,7 +16,7 @@ import xyz.xenondevs.nova.data.serialization.json.serializer.LootItemSerializati
 import xyz.xenondevs.nova.data.serialization.json.serializer.LootTableSerialization
 import xyz.xenondevs.nova.data.serialization.json.serializer.NamespacedIdTypeAdapter
 import xyz.xenondevs.nova.data.serialization.json.serializer.NamespacedKeyTypeAdapter
-import xyz.xenondevs.nova.data.serialization.json.serializer.NovaMaterialSerialization
+import xyz.xenondevs.nova.data.serialization.json.serializer.ResourceLocationTypeAdapter
 import xyz.xenondevs.nova.data.serialization.json.serializer.UUIDTypeAdapter
 import xyz.xenondevs.nova.data.serialization.json.serializer.VersionSerialization
 import xyz.xenondevs.nova.data.serialization.json.serializer.WorldTypeAdapter
@@ -27,10 +27,10 @@ private val GSON_BUILDER = GsonBuilder()
     .registerTypeHierarchyAdapter(UUIDTypeAdapter)
     .registerTypeHierarchyAdapter(NamespacedIdTypeAdapter)
     .registerTypeHierarchyAdapter(NamespacedKeyTypeAdapter)
+    .registerTypeHierarchyAdapter(ResourceLocationTypeAdapter)
     .registerTypeHierarchyAdapter(ItemStackSerialization)
     .registerTypeHierarchyAdapter(LocationSerialization)
     .registerTypeHierarchyAdapter(WorldTypeAdapter)
-    .registerTypeHierarchyAdapter(NovaMaterialSerialization)
     .registerTypeHierarchyAdapter(YamlConfigurationTypeAdapter)
     .registerTypeHierarchyAdapter(IntRangeSerialization)
     .registerTypeHierarchyAdapter(LootTableSerialization)

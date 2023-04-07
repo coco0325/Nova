@@ -11,20 +11,22 @@ import xyz.xenondevs.nova.UpdateReminder
 import xyz.xenondevs.nova.addon.AddonManager
 import xyz.xenondevs.nova.addon.AddonsLoader
 import xyz.xenondevs.nova.data.resources.upload.AutoUploadManager
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.material.ItemCategories
-import xyz.xenondevs.nova.material.ItemNovaMaterial
+import xyz.xenondevs.nova.initialize.InternalInit
+import xyz.xenondevs.nova.item.ItemCategories
+import xyz.xenondevs.nova.item.NovaItem
 import xyz.xenondevs.nova.player.PlayerFreezer
 import xyz.xenondevs.nova.player.ability.AbilityManager
+import xyz.xenondevs.nova.registry.NovaRegistries
 import xyz.xenondevs.nova.tileentity.TileEntityManager
 import xyz.xenondevs.nova.tileentity.network.NetworkManager
-import xyz.xenondevs.nova.tileentity.upgrade.UpgradeTypeRegistry
 import xyz.xenondevs.nova.ui.overlay.actionbar.ActionbarOverlayManager
 import xyz.xenondevs.nova.ui.overlay.bossbar.BossBarOverlayManager
 import xyz.xenondevs.nova.util.data.getResourceAsStream
 import xyz.xenondevs.nova.util.data.getResources
 import xyz.xenondevs.nova.world.ChunkReloadWatcher
+import xyz.xenondevs.nova.world.block.NovaBlock
 import xyz.xenondevs.nova.world.block.limits.TileEntityLimits
 import java.io.File
 import kotlin.collections.component1
@@ -34,10 +36,11 @@ import kotlin.reflect.KProperty
 
 val DEFAULT_CONFIG by configReloadable { NovaConfig["config"] }
 
-object NovaConfig : Initializable() {
-    
-    override val initializationStage = InitializationStage.PRE_WORLD
-    override val dependsOn = setOf(AddonsLoader)
+@InternalInit(
+    stage = InitializationStage.PRE_WORLD,
+    dependsOn = [AddonsLoader::class]
+)
+object NovaConfig {
     
     private val configs = HashMap<String, YamlConfiguration>()
     internal val reloadables = arrayListOf<Reloadable>()
@@ -51,7 +54,8 @@ object NovaConfig : Initializable() {
         )
     }
     
-    override fun init() {
+    @InitFun
+    private fun init() {
         LOGGER.info("Loading configs")
         
         getResources("configs/nova/")
@@ -84,8 +88,9 @@ object NovaConfig : Initializable() {
     internal fun reload() {
         loadDefaultConfig()
         init()
-        UpgradeTypeRegistry.types.forEach(Reloadable::reload)
+        NovaRegistries.UPGRADE_TYPE.forEach(Reloadable::reload)
         reloadables.sorted().forEach(Reloadable::reload)
+        NovaRegistries.ITEM.forEach { it.logic.reload() }
         TileEntityManager.tileEntities.forEach(Reloadable::reload)
         NetworkManager.queueAsync { it.networks.forEach(Reloadable::reload) }
         AbilityManager.activeAbilities.values.flatMap { it.values }.forEach(Reloadable::reload)
@@ -103,14 +108,20 @@ object NovaConfig : Initializable() {
     operator fun get(name: String): YamlConfiguration =
         configs[name] ?: throw IllegalArgumentException("Config not found: $name")
     
-    operator fun get(material: ItemNovaMaterial): YamlConfiguration =
-        configs[material.id.toString()] ?: throw IllegalArgumentException("Config not found: ${material.id}")
+    operator fun get(item: NovaItem): YamlConfiguration =
+        configs[item.id.toString()] ?: throw IllegalArgumentException("Config not found: ${item.id}")
+    
+    operator fun get(block: NovaBlock): YamlConfiguration =
+        configs[block.id.toString()] ?: throw IllegalArgumentException("Config not found: ${block.id}")
     
     fun getOrNull(name: String): YamlConfiguration? =
         configs[name]
     
-    fun getOrNull(material: ItemNovaMaterial): YamlConfiguration? =
-        configs[material.id.toString()]
+    fun getOrNull(item: NovaItem): YamlConfiguration? =
+        configs[item.id.toString()]
+    
+    fun getOrNull(block: NovaBlock): YamlConfiguration? =
+        configs[block.id.toString()]
     
     fun save(name: String) {
         configs[name]!!.save(File(NOVA.dataFolder, "configs/$name.yml"))

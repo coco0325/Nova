@@ -30,8 +30,8 @@ private val ROTATIONS: Array<Quaternionf?> = arrayOf(
 class DisplayEntityModelProvider(blockState: NovaBlockState) : BlockModelProvider {
     
     private val pos = blockState.pos
-    private val material = blockState.material
-    private val modelData = material.block as DisplayEntityBlockModelData
+    private val material = blockState.block
+    private val modelData = material.model as DisplayEntityBlockModelData
     
     private val entities = ArrayList<FakeItemDisplay>()
     private val multiBlockPositions = material.multiBlockLoader?.invoke(pos)

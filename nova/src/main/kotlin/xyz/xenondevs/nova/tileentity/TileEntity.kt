@@ -2,10 +2,10 @@ package xyz.xenondevs.nova.tileentity
 
 import net.kyori.adventure.text.Component
 import net.minecraft.network.protocol.Packet
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.Bukkit
 import org.bukkit.Chunk
 import org.bukkit.Location
-import org.bukkit.NamespacedKey
 import org.bukkit.OfflinePlayer
 import org.bukkit.Sound
 import org.bukkit.World
@@ -22,14 +22,10 @@ import xyz.xenondevs.invui.virtualinventory.event.ItemUpdateEvent
 import xyz.xenondevs.invui.virtualinventory.event.UpdateReason
 import xyz.xenondevs.invui.window.Window
 import xyz.xenondevs.invui.window.type.context.setTitle
-import xyz.xenondevs.nova.NOVA
-import xyz.xenondevs.nova.data.NamespacedId
 import xyz.xenondevs.nova.data.config.Reloadable
 import xyz.xenondevs.nova.data.serialization.DataHolder
 import xyz.xenondevs.nova.data.world.block.property.Directional
 import xyz.xenondevs.nova.data.world.block.state.NovaTileEntityState
-import xyz.xenondevs.nova.data.world.legacy.impl.v0_10.cbf.LegacyCompound
-import xyz.xenondevs.nova.material.TileEntityNovaMaterial
 import xyz.xenondevs.nova.tileentity.menu.MenuContainer
 import xyz.xenondevs.nova.tileentity.network.NetworkConnectionType
 import xyz.xenondevs.nova.tileentity.network.fluid.FluidType
@@ -51,7 +47,8 @@ import xyz.xenondevs.nova.util.salt
 import xyz.xenondevs.nova.util.yaw
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.ChunkPos
-import xyz.xenondevs.nova.world.block.TileEntityBlock
+import xyz.xenondevs.nova.world.block.NovaTileEntityBlock
+import xyz.xenondevs.nova.world.block.TileEntityBlockBehavior
 import xyz.xenondevs.nova.world.block.context.BlockInteractContext
 import xyz.xenondevs.nova.world.fakeentity.FakeEntityManager
 import xyz.xenondevs.nova.world.region.DynamicRegion
@@ -65,31 +62,25 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 import kotlin.reflect.full.hasAnnotation
-import xyz.xenondevs.nova.api.tileentity.TileEntity as ITileEntity
 import xyz.xenondevs.nova.tileentity.menu.TileEntityMenuClass as TileEntityMenuAnnotation
 
-abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true), Reloadable, ITileEntity {
+abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true), Reloadable {
     
     companion object {
         val SELF_UPDATE_REASON = object : UpdateReason {}
         
-        @Deprecated("Legacy value")
-        val LEGACY_TILE_ENTITY_KEY = NamespacedKey(NOVA, "tileEntityData")
-        
-        val TILE_ENTITY_DATA_KEY = NamespacedId(NOVA, "tileentity")
+        val TILE_ENTITY_DATA_KEY = ResourceLocation("nova", "tileentity")
     }
-    
-    override var legacyData: LegacyCompound? = blockState.legacyData
     
     val pos: BlockPos = blockState.pos
     val uuid: UUID = blockState.uuid
     val ownerUUID: UUID? = blockState.ownerUUID
     final override val data: Compound = blockState.data
-    final override val material: TileEntityNovaMaterial = blockState.material
+    val block: NovaTileEntityBlock = blockState.block
     
-    override val owner: OfflinePlayer? by lazy { ownerUUID?.let(Bukkit::getOfflinePlayer) }
+    val owner: OfflinePlayer? by lazy { ownerUUID?.let(Bukkit::getOfflinePlayer) }
     
-    final override val location: Location
+    val location: Location
         get() = Location(pos.world, pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble(), facing.getYaw(BlockFace.NORTH), 0f)
     val centerLocation: Location
         get() = location.center()
@@ -163,17 +154,19 @@ abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true
     /**
      * Gets a list of [ItemStacks][ItemStack] to be dropped when this [TileEntity] is destroyed.
      */
-    override fun getDrops(includeSelf: Boolean): MutableList<ItemStack> {
+    open fun getDrops(includeSelf: Boolean): MutableList<ItemStack> {
         val drops = ArrayList<ItemStack>()
         if (includeSelf) {
             saveData()
             
-            val item = material.createItemStack()
-            if (globalData.isNotEmpty()) {
-                item.novaCompound[TILE_ENTITY_DATA_KEY] = globalData
+            val item = block.item?.createItemStack()
+            if (item != null) {
+                if (globalData.isNotEmpty()) {
+                    item.novaCompound[TILE_ENTITY_DATA_KEY] = globalData
+                }
+                
+                drops += item
             }
-            
-            drops += item
         }
         
         if (this is Upgradable) drops += this.upgradeHolder.getUpgradeItems()
@@ -221,7 +214,7 @@ abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true
     }
     
     /**
-     * Called when a [TileEntityBlock] is interacted with.
+     * Called when a [TileEntityBlockBehavior] is interacted with.
      *
      * Might be called twice for each hand.
      *
@@ -304,15 +297,9 @@ abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true
         val storedAmount: Long?
         val storedType: FluidType?
         
-        if (legacyData != null) {
-            val fluidData = retrieveDataOrNull<LegacyCompound>("fluidContainer.$uuid")
-            storedAmount = fluidData?.get<Long>("amount")
-            storedType = fluidData?.get<FluidType>("type")
-        } else {
-            val fluidData = retrieveDataOrNull<Compound>("fluidContainer.$uuid")
-            storedAmount = fluidData?.get<Long>("amount")
-            storedType = fluidData?.get<FluidType>("type")
-        }
+        val fluidData = retrieveDataOrNull<Compound>("fluidContainer.$uuid")
+        storedAmount = fluidData?.get<Long>("amount")
+        storedType = fluidData?.get<FluidType>("type")
         
         val container = NovaFluidContainer(
             uuid,
@@ -589,14 +576,14 @@ abstract class TileEntity(val blockState: NovaTileEntityState) : DataHolder(true
     }
     
     override fun toString(): String {
-        return "${javaClass.name}(Material: $material, Location: ${pos}, UUID: $uuid)"
+        return "${javaClass.name}(Material: $block, Location: ${pos}, UUID: $uuid)"
     }
     
     abstract inner class TileEntityMenu internal constructor(protected val texture: GuiTexture? = null) {
         
         open fun getTitle(): Component {
-            return texture?.getTitle(material.localizedName)
-                ?: Component.translatable(material.localizedName)
+            return texture?.getTitle(block.localizedName)
+                ?: Component.translatable(block.localizedName)
         }
         
     }

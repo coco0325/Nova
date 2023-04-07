@@ -14,7 +14,7 @@ import xyz.xenondevs.bytebase.util.calls
 import xyz.xenondevs.bytebase.util.replaceEvery
 import xyz.xenondevs.nova.item.behavior.FireResistant
 import xyz.xenondevs.nova.transformer.MultiTransformer
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 
 internal object FireResistancePatches : MultiTransformer(ItemEntity::class, Inventory::class) {
     
@@ -34,9 +34,9 @@ internal object FireResistancePatches : MultiTransformer(ItemEntity::class, Inve
     
     @JvmStatic
     fun isFireResistant(itemStack: ItemStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null)
-            return novaMaterial.novaItem.hasBehavior(FireResistant::class)
+        val novaItem = itemStack.novaItem
+        if (novaItem != null)
+            return novaItem.hasBehavior(FireResistant::class)
         
         return itemStack.item.isFireResistant
     }

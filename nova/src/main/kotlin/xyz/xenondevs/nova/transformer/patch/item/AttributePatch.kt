@@ -14,7 +14,7 @@ import xyz.xenondevs.bytebase.asm.buildInsnList
 import xyz.xenondevs.bytebase.util.calls
 import xyz.xenondevs.bytebase.util.replaceFirst
 import xyz.xenondevs.nova.transformer.MethodTransformer
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 
 internal object AttributePatch : MethodTransformer(ItemStack::getAttributeModifiers) {
     
@@ -30,9 +30,9 @@ internal object AttributePatch : MethodTransformer(ItemStack::getAttributeModifi
     
     @JvmStatic
     fun getDefaultAttributeModifiers(itemStack: ItemStack, slot: EquipmentSlot): Multimap<Attribute, AttributeModifier> {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            val attributeModifiers = novaMaterial.novaItem.attributeModifiers[slot]?.takeUnless(List<*>::isEmpty)
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            val attributeModifiers = novaItem.logic.attributeModifiers[slot]?.takeUnless(List<*>::isEmpty)
             val novaModifiers = Multimaps.newListMultimap<Attribute, AttributeModifier>(HashMap(), ::ArrayList)
             attributeModifiers?.forEach {
                 novaModifiers.put(

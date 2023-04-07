@@ -2,12 +2,11 @@ package xyz.xenondevs.nova.item.behavior
 
 import net.kyori.adventure.text.Component
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.commons.provider.immutable.provider
 import xyz.xenondevs.nova.data.serialization.cbf.NamespacedCompound
-import xyz.xenondevs.nova.item.PacketItemData
+import xyz.xenondevs.nova.item.NovaItem
+import xyz.xenondevs.nova.item.logic.PacketItemData
+import xyz.xenondevs.nova.item.options.DamageableOptions
 import xyz.xenondevs.nova.item.vanilla.VanillaMaterialProperty
-import xyz.xenondevs.nova.material.ItemNovaMaterial
-import xyz.xenondevs.nova.material.options.DamageableOptions
 import xyz.xenondevs.nova.util.item.novaCompound
 import kotlin.math.min
 import net.minecraft.world.item.ItemStack as MojangStack
@@ -16,7 +15,6 @@ class Damageable(val options: DamageableOptions) : ItemBehavior() {
     
     @Deprecated("Replaced by DamageableOptions", ReplaceWith("options.durability"))
     val durability: Int by options.durabilityProvider
-    override val vanillaMaterialProperties = provider(listOf(VanillaMaterialProperty.DAMAGEABLE))
     
     //<editor-fold desc="Bukkit ItemStack methods", defaultstate="collapsed">
     fun getDamage(itemStack: ItemStack): Int {
@@ -96,9 +94,13 @@ class Damageable(val options: DamageableOptions) : ItemBehavior() {
         )
     }
     
+    override fun getVanillaMaterialProperties(): List<VanillaMaterialProperty> {
+        return listOf(VanillaMaterialProperty.DAMAGEABLE)
+    }
+    
     companion object : ItemBehaviorFactory<Damageable>() {
-        override fun create(material: ItemNovaMaterial) =
-            Damageable(DamageableOptions.configurable(material))
+        override fun create(item: NovaItem) =
+            Damageable(DamageableOptions.configurable(item))
     }
     
 }

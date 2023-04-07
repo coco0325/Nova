@@ -28,37 +28,36 @@ object FuelUtils {
     fun getBurnTime(material: Material): Int? = VANILLA_FUELS[material]
     
     fun isFuel(itemStack: ItemStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            return novaMaterial.novaItem.hasBehavior(Fuel::class)
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            return novaItem.hasBehavior(Fuel::class)
         }
         
         return itemStack.type in VANILLA_FUELS
     }
     
     fun getBurnTime(itemStack: ItemStack): Int? {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            return novaMaterial.novaItem.getBehavior(Fuel::class)?.options?.burnTime
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            return novaItem.getBehavior(Fuel::class)?.options?.burnTime
         }
         
         return getBurnTime(itemStack.type)
     }
     
     fun isFuel(itemStack: MojangStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            return novaMaterial.novaItem.hasBehavior(Fuel::class)
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            return novaItem.hasBehavior(Fuel::class)
         }
-        
         
         return itemStack.item in NMS_VANILLA_FUELS
     }
     
     fun getBurnTime(itemStack: MojangStack): Int? {
-        val novaMaterial = itemStack.novaMaterial
-        if (novaMaterial != null) {
-            return novaMaterial.novaItem.getBehavior(Fuel::class)?.options?.burnTime
+        val novaItem = itemStack.novaItem
+        if (novaItem != null) {
+            return novaItem.getBehavior(Fuel::class)?.options?.burnTime
         }
         
         return NMS_VANILLA_FUELS[itemStack.item]

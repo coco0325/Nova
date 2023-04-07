@@ -9,6 +9,7 @@ import org.bukkit.OfflinePlayer
 import org.bukkit.entity.Entity
 import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.nova.NOVA
+import xyz.xenondevs.nova.api.ApiTileEntityWrapper
 import xyz.xenondevs.nova.api.protection.ProtectionIntegration
 import xyz.xenondevs.nova.api.protection.ProtectionIntegration.ExecutionMode
 import xyz.xenondevs.nova.integration.InternalIntegration
@@ -20,10 +21,10 @@ import xyz.xenondevs.nova.integration.protection.plugin.Residence
 import xyz.xenondevs.nova.integration.protection.plugin.Towny
 import xyz.xenondevs.nova.integration.protection.plugin.WorldGuard
 import xyz.xenondevs.nova.tileentity.TileEntity
+import xyz.xenondevs.nova.util.MINECRAFT_SERVER
 import xyz.xenondevs.nova.util.concurrent.CombinedBooleanFuture
 import xyz.xenondevs.nova.util.data.ArrayKey
 import xyz.xenondevs.nova.util.isBetweenXZ
-import xyz.xenondevs.nova.util.MINECRAFT_SERVER
 import xyz.xenondevs.nova.util.runTask
 import xyz.xenondevs.nova.world.pos
 import java.util.concurrent.CompletableFuture
@@ -56,8 +57,9 @@ object ProtectionManager {
     
     fun canPlace(tileEntity: TileEntity, item: ItemStack, location: Location): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(0, tileEntity.uuid, item, location.pos)) {
-            checkProtection(owner, location) { canPlace(tileEntity, item, location) }
+            checkProtection(owner, location) { this.canPlace(wrappedTileEntity, item, location) }
         }
     }
     
@@ -68,8 +70,9 @@ object ProtectionManager {
     
     fun canBreak(tileEntity: TileEntity, item: ItemStack?, location: Location): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(1, tileEntity.uuid, item, location.pos)) {
-            checkProtection(owner, location) { canBreak(tileEntity, item, location) }
+            checkProtection(owner, location) { canBreak(wrappedTileEntity, item, location) }
         }
     }
     
@@ -81,8 +84,9 @@ object ProtectionManager {
     
     fun canUseBlock(tileEntity: TileEntity, item: ItemStack?, location: Location): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(2, tileEntity.uuid, item, location.pos)) {
-            checkProtection(owner, location) { canUseBlock(tileEntity, item, location) }
+            checkProtection(owner, location) { canUseBlock(wrappedTileEntity, item, location) }
         }
     }
     
@@ -94,8 +98,9 @@ object ProtectionManager {
     
     fun canUseItem(tileEntity: TileEntity, item: ItemStack, location: Location): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(3, tileEntity.uuid, item, location.pos)) {
-            checkProtection(owner, location) { canUseItem(tileEntity, item, location) }
+            checkProtection(owner, location) { canUseItem(wrappedTileEntity, item, location) }
         }
     }
     
@@ -106,8 +111,9 @@ object ProtectionManager {
     
     fun canInteractWithEntity(tileEntity: TileEntity, entity: Entity, item: ItemStack?): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(4, tileEntity.uuid, entity, item, entity.location.pos)) {
-            checkProtection(owner, entity.location) { canInteractWithEntity(tileEntity, entity, item) }
+            checkProtection(owner, entity.location) { canInteractWithEntity(wrappedTileEntity, entity, item) }
         }
     }
     
@@ -118,8 +124,9 @@ object ProtectionManager {
     
     fun canHurtEntity(tileEntity: TileEntity, entity: Entity, item: ItemStack?): CompletableFuture<Boolean> {
         val owner = tileEntity.owner ?: return CompletableFuture.completedFuture(true)
+        val wrappedTileEntity = ApiTileEntityWrapper(tileEntity)
         return PROTECTION_CACHE.get(ArrayKey(5, tileEntity.uuid, entity, item, entity.location.pos)) {
-            checkProtection(owner, entity.location) { canHurtEntity(tileEntity, entity, item) }
+            checkProtection(owner, entity.location) { canHurtEntity(wrappedTileEntity, entity, item) }
         }
     }
     
@@ -152,7 +159,6 @@ object ProtectionManager {
         )
     }
     
-    @Suppress("UNCHECKED_CAST")
     private fun checkIntegrations(check: ProtectionIntegration.() -> Boolean): MutableList<CompletableFuture<Boolean>> {
         val isMainThread = Thread.currentThread() == MINECRAFT_SERVER.serverThread
         val futures = ArrayList<CompletableFuture<Boolean>>()

@@ -18,7 +18,7 @@ import xyz.xenondevs.nova.item.tool.VanillaToolCategory
 import xyz.xenondevs.nova.transformer.MultiTransformer
 import xyz.xenondevs.nova.util.bukkitMirror
 import xyz.xenondevs.nova.util.item.ToolUtils
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.item.takeUnlessEmpty
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry
 import net.minecraft.world.entity.player.Player as MojangPlayer
@@ -64,10 +64,10 @@ internal object ToolPatches : MultiTransformer(CraftBlock::class, MojangPlayer::
     
     @JvmStatic
     fun canDoSweepAttack(itemStack: MojangStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial
+        val novaItem = itemStack.novaItem
         
-        return if (novaMaterial != null) {
-            novaMaterial.novaItem.getBehavior(Tool::class)?.options?.canSweepAttack ?: false
+        return if (novaItem != null) {
+            novaItem.getBehavior(Tool::class)?.options?.canSweepAttack ?: false
         } else {
             (ToolCategory.ofItem(itemStack.bukkitMirror) as? VanillaToolCategory)?.canSweepAttack ?: false
         }
@@ -87,7 +87,7 @@ internal object ToolPatches : MultiTransformer(CraftBlock::class, MojangPlayer::
     @JvmStatic
     fun getKnockbackBonus(entity: LivingEntity): Int {
         return EnchantmentHelper.getEnchantmentLevel(Enchantments.KNOCKBACK, entity) +
-            (entity.mainHandItem.novaMaterial?.novaItem?.getBehavior(Tool::class)?.options?.knockbackBonus ?: 0)
+            (entity.mainHandItem.novaItem?.getBehavior(Tool::class)?.options?.knockbackBonus ?: 0)
     }
     
 }

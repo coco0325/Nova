@@ -1,5 +1,6 @@
 package xyz.xenondevs.nova.player.ability
 
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.Bukkit
 import org.bukkit.NamespacedKey
 import org.bukkit.entity.Player
@@ -11,31 +12,36 @@ import xyz.xenondevs.nmsutils.util.removeIf
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.addon.AddonsInitializer
-import xyz.xenondevs.nova.data.NamespacedId
 import xyz.xenondevs.nova.data.serialization.persistentdata.get
 import xyz.xenondevs.nova.data.serialization.persistentdata.set
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.DisableFun
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
+import xyz.xenondevs.nova.registry.NovaRegistries.ABILITY_TYPE
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTaskTimer
 import kotlin.collections.set
 
 private val ABILITIES_KEY = NamespacedKey(NOVA, "abilities1")
 
-object AbilityManager : Initializable(), Listener {
+@InternalInit(
+    stage = InitializationStage.POST_WORLD,
+    dependsOn = [AddonsInitializer::class]
+)
+object AbilityManager : Listener {
     
     internal val activeAbilities = HashMap<Player, HashMap<AbilityType<*>, Ability>>()
     
-    override val initializationStage = InitializationStage.POST_WORLD
-    override val dependsOn = setOf(AddonsInitializer)
-    
-    override fun init() {
+    @InitFun
+    private fun init() {
         registerEvents()
         Bukkit.getOnlinePlayers().forEach(AbilityManager::handlePlayerJoin)
         runTaskTimer(0, 1) { activeAbilities.values.flatMap(Map<*, Ability>::values).forEach(Ability::handleTick) }
     }
     
-    override fun disable() {
+    @DisableFun
+    private fun disable() {
         LOGGER.info("Removing active abilities")
         Bukkit.getOnlinePlayers().forEach(AbilityManager::handlePlayerQuit)
     }
@@ -92,10 +98,10 @@ object AbilityManager : Initializable(), Listener {
     
     private fun handlePlayerJoin(player: Player) {
         val dataContainer = player.persistentDataContainer
-        val ids = dataContainer.get<List<NamespacedId>>(ABILITIES_KEY)
+        val ids = dataContainer.get<List<ResourceLocation>>(ABILITIES_KEY)
         
         ids?.forEach {
-            val abilityType = AbilityTypeRegistry.of<AbilityType<*>>(it)
+            val abilityType = ABILITY_TYPE[it]
             if (abilityType != null)
                 giveAbility(player, abilityType)
         }

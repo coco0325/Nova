@@ -7,7 +7,6 @@ import org.bukkit.Keyed
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.Tag
-import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -33,16 +32,28 @@ import xyz.xenondevs.nova.addon.AddonsInitializer
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.config.configReloadable
 import xyz.xenondevs.nova.data.recipe.impl.RepairItemRecipe
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.util.*
+import xyz.xenondevs.nova.initialize.InternalInit
+import xyz.xenondevs.nova.registry.NovaRegistries.RECIPE_TYPE
+import xyz.xenondevs.nova.util.MINECRAFT_SERVER
+import xyz.xenondevs.nova.util.addToInventoryOrDrop
+import xyz.xenondevs.nova.util.containsAll
 import xyz.xenondevs.nova.util.data.clientsideCopy
 import xyz.xenondevs.nova.util.data.key
 import xyz.xenondevs.nova.util.item.customModelData
 import xyz.xenondevs.nova.util.item.namelessCopyOrSelf
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.item.unhandledTags
+import xyz.xenondevs.nova.util.namespacedKey
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry
+import xyz.xenondevs.nova.util.registerEvents
+import xyz.xenondevs.nova.util.registerPacketListener
+import xyz.xenondevs.nova.util.resourceLocation
+import xyz.xenondevs.nova.util.runTask
+import xyz.xenondevs.nova.util.send
+import xyz.xenondevs.nova.util.serverPlayer
+import xyz.xenondevs.nova.util.takeFirstOccurrence
 import net.minecraft.world.item.crafting.Recipe as MojangRecipe
 import org.bukkit.inventory.Recipe as BukkitRecipe
 
@@ -121,7 +132,11 @@ annotation class HardcodedRecipes
 
 private val ALLOW_RESULT_OVERWRITE by configReloadable { DEFAULT_CONFIG.getBoolean("debug.allow_craft_result_overwrite") }
 
-object RecipeManager : Initializable(), Listener {
+@InternalInit(
+    stage = InitializationStage.POST_WORLD,
+    dependsOn = [AddonsInitializer::class, VanillaRecipeTypes::class]
+)
+object RecipeManager : Listener {
     
     private val INTERNAL_RECIPES: Map<ResourceLocation, (ResourceLocation) -> MojangRecipe<*>> = mapOf(
         ResourceLocation("minecraft", "repair_item") to ::RepairItemRecipe
@@ -129,10 +144,6 @@ object RecipeManager : Initializable(), Listener {
     
     private val shapedRecipes = HashMap<NamespacedKey, OptimizedShapedRecipe>()
     private val shapelessRecipes = HashMap<NamespacedKey, ShapelessRecipe>()
-    private val furnaceRecipes = HashMap<NamespacedKey, FurnaceRecipe>()
-    private val blastFurnaceRecipes = HashMap<NamespacedKey, BlastingRecipe>()
-    private val smokerRecipes = HashMap<NamespacedKey, SmokingRecipe>()
-    private val campfireRecipes = HashMap<NamespacedKey, CampfireRecipe>()
     private val registeredVanillaRecipeKeys = HashSet<NamespacedKey>()
     private val customVanillaRecipeKeys = HashSet<NamespacedKey>()
     private val _clientsideRecipes = HashMap<NamespacedKey, MojangRecipe<*>>()
@@ -144,10 +155,8 @@ object RecipeManager : Initializable(), Listener {
     val novaRecipes: Map<RecipeType<*>, Map<NamespacedKey, NovaRecipe>>
         get() = _novaRecipes
     
-    override val initializationStage = InitializationStage.POST_WORLD
-    override val dependsOn = setOf(AddonsInitializer)
-    
-    override fun init() {
+    @InitFun
+    private fun init() {
         LOGGER.info("Loading recipes")
         registerEvents()
         registerPacketListener()
@@ -222,47 +231,33 @@ object RecipeManager : Initializable(), Listener {
                     }
                     
                     is FurnaceRecipe -> {
-                        furnaceRecipes[key] = recipe
-                        
                         val nmsRecipe = NovaFurnaceRecipe(recipe)
                         MINECRAFT_SERVER.recipeManager.addRecipe(nmsRecipe)
-                        
                         _clientsideRecipes[key] = nmsRecipe.clientsideCopy()
                     }
                     
                     is BlastingRecipe -> {
-                        blastFurnaceRecipes[key] = recipe
-                        
                         val nmsRecipe = NovaBlastFurnaceRecipe(recipe)
                         MINECRAFT_SERVER.recipeManager.addRecipe(nmsRecipe)
-                        
                         _clientsideRecipes[key] = nmsRecipe.clientsideCopy()
                     }
                     
                     is SmokingRecipe -> {
-                        smokerRecipes[key] = recipe
-                        
                         val nmsRecipe = NovaSmokerRecipe(recipe)
                         MINECRAFT_SERVER.recipeManager.addRecipe(nmsRecipe)
-                        
                         _clientsideRecipes[key] = nmsRecipe.clientsideCopy()
                     }
                     
                     is CampfireRecipe -> {
-                        campfireRecipes[key] = recipe
-                        
                         val nmsRecipe = NovaCampfireRecipe(recipe)
                         MINECRAFT_SERVER.recipeManager.addRecipe(nmsRecipe)
-                        
                         _clientsideRecipes[key] = nmsRecipe.clientsideCopy()
                     }
                     
                     is StonecuttingRecipe -> {
-                        Bukkit.addRecipe(recipe)
-                        
-                        // TODO
-                        
-                        _clientsideRecipes[key] = recipe.clientsideCopy()
+                        val nmsRecipe = NovaStonecutterRecipe(recipe)
+                        MINECRAFT_SERVER.recipeManager.addRecipe(nmsRecipe)
+                        _clientsideRecipes[key] = nmsRecipe.clientsideCopy()
                     }
                     
                     else -> Bukkit.addRecipe(recipe)
@@ -294,14 +289,13 @@ object RecipeManager : Initializable(), Listener {
         
         shapedRecipes.clear()
         shapelessRecipes.clear()
-        furnaceRecipes.clear()
         customVanillaRecipeKeys.clear()
         _clientsideRecipes.clear()
         _novaRecipes.clear()
         
         loadRecipes()
-        RecipeRegistry.init()
-        RecipeTypeRegistry.types.forEach { it.group?.invalidateCache() }
+        RecipeRegistry.indexRecipes()
+        RECIPE_TYPE.forEach { it.group.invalidateCache() }
     }
     
     @EventHandler
@@ -314,7 +308,7 @@ object RecipeManager : Initializable(), Listener {
         val recipe = event.recipe ?: return
         
         var requiresContainer = recipe.key in registeredVanillaRecipeKeys
-        if (!requiresContainer && event.inventory.contents.any { it?.novaMaterial != null }) {
+        if (!requiresContainer && event.inventory.contents.any { it.novaItem != null }) {
             // prevent non-Nova recipes from using Nova items
             event.inventory.result = ItemStack(Material.AIR)
             requiresContainer = true
@@ -330,10 +324,10 @@ object RecipeManager : Initializable(), Listener {
     private fun handleRecipePlace(event: ServerboundPlaceRecipePacketEvent) {
         val key = NamespacedKey.fromString(event.packet.recipe.toString())
         if (key in shapedRecipes) {
-            runTask(event.player as Entity) { fillCraftingInventory(event.player, shapedRecipes[key]!!) }
+            runTask { fillCraftingInventory(event.player, shapedRecipes[key]!!) }
             event.isCancelled = true
         } else if (key in shapelessRecipes) {
-            runTask(event.player as Entity) { fillCraftingInventory(event.player, shapelessRecipes[key]!!) }
+            runTask { fillCraftingInventory(event.player, shapelessRecipes[key]!!) }
             event.isCancelled = true
         }
     }

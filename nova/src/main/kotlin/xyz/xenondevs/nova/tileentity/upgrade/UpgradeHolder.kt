@@ -1,5 +1,6 @@
 package xyz.xenondevs.nova.tileentity.upgrade
 
+import net.minecraft.resources.ResourceLocation
 import org.bukkit.inventory.ItemStack
 import xyz.xenondevs.cbf.Compound
 import xyz.xenondevs.commons.collections.mapKeysNotNullTo
@@ -7,18 +8,16 @@ import xyz.xenondevs.commons.provider.Provider
 import xyz.xenondevs.invui.virtualinventory.VirtualInventory
 import xyz.xenondevs.invui.virtualinventory.event.InventoryUpdatedEvent
 import xyz.xenondevs.invui.virtualinventory.event.ItemUpdateEvent
-import xyz.xenondevs.nova.data.NamespacedId
+import xyz.xenondevs.nova.registry.NovaRegistries
 import xyz.xenondevs.nova.tileentity.TileEntity
 import xyz.xenondevs.nova.tileentity.TileEntity.Companion.SELF_UPDATE_REASON
 import xyz.xenondevs.nova.tileentity.menu.MenuContainer
 import xyz.xenondevs.nova.ui.UpgradesGui
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import kotlin.math.min
 
-private fun ItemStack.getUpgradeType(): UpgradeType<*>? {
-    val novaMaterial = novaMaterial ?: return null
-    return UpgradeTypeRegistry.of<UpgradeType<*>>(novaMaterial)
-}
+private fun ItemStack.getUpgradeType(): UpgradeType<*>? =
+    novaItem?.let { UpgradeType.of<UpgradeType<*>>(it) }
 
 class UpgradeHolder internal constructor(
     tileEntity: TileEntity,
@@ -27,13 +26,13 @@ class UpgradeHolder internal constructor(
     internal val allowed: Set<UpgradeType<*>>
 ) {
     
-    private val material = tileEntity.material
+    private val material = tileEntity.block
     private val valueProviders: Map<UpgradeType<*>, ModifierProvider<*>> = allowed.associateWithTo(HashMap()) { ModifierProvider(it) }
     
     internal val input = VirtualInventory(null, 1).apply { setItemUpdateHandler(::handlePreInvUpdate); setInventoryUpdatedHandler(::handlePostInvUpdate) }
     internal val upgrades: HashMap<UpgradeType<*>, Int> =
-        tileEntity.retrieveData<Map<NamespacedId, Int>>("upgrades", ::HashMap)
-            .mapKeysNotNullTo(HashMap()) { UpgradeTypeRegistry.of<UpgradeType<*>>(it.key) }
+        tileEntity.retrieveData<Map<ResourceLocation, Int>>("upgrades", ::HashMap)
+            .mapKeysNotNullTo(HashMap()) { NovaRegistries.UPGRADE_TYPE[it.key] }
     
     val gui by lazy { UpgradesGui(this) { menuContainer.openWindow(it) } }
     

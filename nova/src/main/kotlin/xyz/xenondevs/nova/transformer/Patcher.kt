@@ -2,6 +2,7 @@ package xyz.xenondevs.nova.transformer
 
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap
 import net.minecraft.server.MinecraftServer
+import org.bukkit.Bukkit
 import xyz.xenondevs.bytebase.ClassWrapperLoader
 import xyz.xenondevs.bytebase.INSTRUMENTATION
 import xyz.xenondevs.bytebase.jvm.VirtualClassPath
@@ -10,8 +11,10 @@ import xyz.xenondevs.commons.collections.mapToArray
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.Nova
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.DisableFun
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.loader.NovaClassLoader
 import xyz.xenondevs.nova.transformer.patch.FieldFilterPatch
 import xyz.xenondevs.nova.transformer.patch.block.NoteBlockPatch
@@ -40,6 +43,7 @@ import xyz.xenondevs.nova.transformer.patch.worldgen.registry.MappedRegistryPatc
 import xyz.xenondevs.nova.transformer.patch.worldgen.registry.RegistryCodecPatch
 import xyz.xenondevs.nova.util.ServerUtils
 import xyz.xenondevs.nova.util.data.getResourceData
+import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.CLASS_LOADER_PARENT_FIELD
 import xyz.xenondevs.nova.util.reflection.ReflectionUtils
 import xyz.xenondevs.nova.util.reflection.defineClass
 import java.lang.System.getProperty
@@ -47,10 +51,8 @@ import java.lang.instrument.ClassDefinition
 import java.lang.management.ManagementFactory
 import java.lang.reflect.Field
 
-internal object Patcher : Initializable() {
-    
-    override val initializationStage = InitializationStage.PRE_WORLD
-    override val dependsOn = emptySet<Initializable>()
+@InternalInit(stage = InitializationStage.PRE_WORLD)
+internal object Patcher {
     
     private val extraOpens = setOf("java.lang", "java.lang.reflect", "java.util", "jdk.internal.misc", "jdk.internal.reflect")
     private val transformers by lazy {
@@ -68,25 +70,19 @@ internal object Patcher : Initializable() {
         "xyz/xenondevs/nova/transformer/patch/worldgen/chunksection/LevelChunkSectionWrapper"
     )
     
-    private lateinit var classLoaderParentField: Field
-    
-    override fun init() {
+    @InitFun
+    private fun init() {
         try {
             LOGGER.info("Applying patches...")
             VirtualClassPath.classLoaders += NOVA.loader.javaClass.classLoader.parent
             redefineModule()
             defineInjectedClasses()
             runTransformers()
-            classLoaderParentField = ReflectionUtils.getField(ClassLoader::class.java, true, "parent")
             insertPatchedLoader()
             undoReversiblePatches()
         } catch (t: Throwable) {
             throw PatcherException(t)
         }
-    }
-    
-    override fun disable() {
-        removePatchedLoader()
     }
     
     private fun redefineModule() {
@@ -165,13 +161,14 @@ internal object Patcher : Initializable() {
     }
     
     private fun insertPatchedLoader() {
-        val spigotLoader = NOVA.loader.javaClass.classLoader.parent
-        ReflectionUtils.setFinalField(classLoaderParentField, spigotLoader, PatchedClassLoader())
+        val spigotLoader = Bukkit::class.java.classLoader
+        ReflectionUtils.setFinalField(CLASS_LOADER_PARENT_FIELD, spigotLoader, PatchedClassLoader())
     }
     
+    @DisableFun
     private fun removePatchedLoader() {
-        val spigotLoader = NOVA.loader.javaClass.classLoader.parent
-        ReflectionUtils.setFinalField(classLoaderParentField, spigotLoader, spigotLoader.parent.parent)
+        val spigotLoader = Bukkit::class.java.classLoader
+        ReflectionUtils.setFinalField(CLASS_LOADER_PARENT_FIELD, spigotLoader, spigotLoader.parent.parent)
     }
     
 }

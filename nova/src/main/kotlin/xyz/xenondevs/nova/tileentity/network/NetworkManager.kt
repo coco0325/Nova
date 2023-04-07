@@ -17,9 +17,12 @@ import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.data.config.PermanentStorage
 import xyz.xenondevs.nova.data.world.event.NovaChunkLoadedEvent
 import xyz.xenondevs.nova.data.world.legacy.LegacyFileConverter
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.DisableFun
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.integration.protection.ProtectionManager
+import xyz.xenondevs.nova.registry.NovaRegistries.NETWORK_TYPE
 import xyz.xenondevs.nova.tileentity.TileEntity
 import xyz.xenondevs.nova.tileentity.TileEntityManager
 import xyz.xenondevs.nova.tileentity.network.item.ItemNetwork
@@ -64,7 +67,11 @@ interface NetworkManager {
     
     fun reloadNetworks()
     
-    companion object : Initializable(), Listener {
+    @InternalInit(
+        stage = InitializationStage.POST_WORLD,
+        dependsOn = [LegacyFileConverter::class, DefaultNetworkTypes::class]
+    )
+    companion object : Listener {
         
         /**
          * Schedules loading the network in that chunk
@@ -124,16 +131,15 @@ interface NetworkManager {
             }
         }
         
-        override val initializationStage = InitializationStage.POST_WORLD
-        override val dependsOn = setOf(LegacyFileConverter)
-        
-        override fun init() {
+        @InitFun
+        private fun init() {
             LOGGER.info("Starting network threads")
             NETWORK_MANAGER.init()
             registerEvents()
         }
         
-        override fun disable() {
+        @DisableFun
+        private fun disable() {
             LOGGER.info("Unloading networks")
             PermanentStorage.store("legacyNetworkChunks", NETWORK_MANAGER.legacyNetworkChunks)
             Bukkit.getWorlds().flatMap(World::getLoadedChunks).forEach { unloadChunk(it.pos) }
@@ -447,7 +453,7 @@ private class NetworkManagerImpl : NetworkManager {
         // add endPoint to nodesById
         nodesById[endPoint.uuid] = endPoint
         
-        return NetworkTypeRegistry.types.mapToAllFuture networks@{ networkType ->
+        return NETWORK_TYPE.mapToAllFuture networks@{ networkType ->
             val allowedFaces = endPoint.allowedFaces[networkType]
             if (allowedFaces != null) { // does the endpoint want to have any connections?
                 // loop over all bridges nearby to possibly connect to

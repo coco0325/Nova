@@ -22,7 +22,7 @@ import xyz.xenondevs.nova.transformer.MultiTransformer
 import xyz.xenondevs.nova.util.bukkitMirror
 import xyz.xenondevs.nova.util.item.DamageableUtils
 import xyz.xenondevs.nova.util.item.ItemDamageResult
-import xyz.xenondevs.nova.util.item.novaMaterial
+import xyz.xenondevs.nova.util.item.novaItem
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.ITEM_STACK_HURT_AND_BREAK_METHOD
 import java.util.function.Consumer
 
@@ -69,10 +69,10 @@ internal object DamageablePatches : MultiTransformer(ItemStack::class, Item::cla
     
     @JvmStatic
     fun hurtEnemy(itemStack: ItemStack, player: Player) {
-        val novaMaterial = itemStack.novaMaterial
+        val novaItem = itemStack.novaItem
         
-        val damage = if (novaMaterial != null) {
-            val damageable = novaMaterial.novaItem.getBehavior(Damageable::class) ?: return
+        val damage = if (novaItem != null) {
+            val damageable = novaItem.getBehavior(Damageable::class) ?: return
             damageable.options.itemDamageOnAttackEntity
         } else {
             val category = ToolCategory.ofItem(itemStack.bukkitMirror) as? VanillaToolCategory ?: return
@@ -96,8 +96,7 @@ internal object DamageablePatches : MultiTransformer(ItemStack::class, Item::cla
     
     @JvmStatic
     fun isArmorItem(itemStack: ItemStack): Boolean {
-        val novaMaterial = itemStack.novaMaterial ?: return itemStack.item is ArmorItem
-        val novaItem = novaMaterial.novaItem
+        val novaItem = itemStack.novaItem ?: return itemStack.item is ArmorItem
         return novaItem.hasBehavior(Wearable::class) && novaItem.hasBehavior(Damageable::class)
     }
     

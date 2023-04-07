@@ -3,25 +3,29 @@ package xyz.xenondevs.nova.data.recipe
 import org.bukkit.Bukkit
 import org.bukkit.inventory.Recipe
 import xyz.xenondevs.nova.LOGGER
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
+import xyz.xenondevs.nova.registry.NovaRegistries.RECIPE_TYPE
 import xyz.xenondevs.nova.ui.menu.item.recipes.group.RecipeGroup
 import xyz.xenondevs.nova.util.data.getInputStacks
 import xyz.xenondevs.nova.util.item.ItemUtils.getId
 import kotlin.reflect.full.isSuperclassOf
 
-object RecipeRegistry : Initializable() {
+@InternalInit(
+    stage = InitializationStage.POST_WORLD_ASYNC,
+    dependsOn = [RecipeManager::class]
+)
+object RecipeRegistry {
     
     private var BUKKIT_RECIPES: List<Recipe> = ArrayList()
+    private var isInitialized = false
     
     var CREATION_RECIPES: Map<String, Map<RecipeGroup<*>, List<RecipeContainer>>> = HashMap()
         private set
     var USAGE_RECIPES: Map<String, Map<RecipeGroup<*>, Set<RecipeContainer>>> = HashMap()
         private set
     var RECIPES_BY_TYPE: Map<RecipeGroup<*>, List<RecipeContainer>> = HashMap()
-    
-    override val initializationStage = InitializationStage.POST_WORLD_ASYNC
-    override val dependsOn = setOf(RecipeManager)
     
     private val fakeRecipes = ArrayList<NovaRecipe>()
     val creationInfo = HashMap<String, String>()
@@ -48,12 +52,14 @@ object RecipeRegistry : Initializable() {
         usageInfo += info
     }
     
-    override fun init() {
+    @InitFun
+    internal fun indexRecipes() {
         LOGGER.info("Indexing recipes")
         BUKKIT_RECIPES = loadBukkitRecipes()
         CREATION_RECIPES = loadCreationRecipes()
         USAGE_RECIPES = loadUsageRecipes()
         RECIPES_BY_TYPE = loadRecipesByGroup()
+        isInitialized = true
     }
     
     private fun loadBukkitRecipes(): List<Recipe> {
@@ -67,7 +73,7 @@ object RecipeRegistry : Initializable() {
         
         // add all with bukkit registered recipes
         getBukkitRecipeSequence().forEach {
-            val group = RecipeTypeRegistry.getType(it).group ?: return@forEach
+            val group = RecipeType.of(it).group
             val itemKey = getId(it.result)
             map.getOrPut(itemKey) { hashMapOf() }
                 .getOrPut(group) { mutableListOf() }
@@ -76,7 +82,7 @@ object RecipeRegistry : Initializable() {
         
         // add all nova machine recipes
         getCreationNovaRecipeSequence().forEach { recipe ->
-            val group = RecipeTypeRegistry.getType(recipe).group ?: return@forEach
+            val group = RecipeType.of(recipe).group
             recipe.getAllResults().forEach { resultStack ->
                 val itemKey = getId(resultStack)
                 map.getOrPut(itemKey) { hashMapOf() }
@@ -93,7 +99,7 @@ object RecipeRegistry : Initializable() {
         
         // add all with bukkit registered recipes
         getBukkitRecipeSequence().forEach { recipe ->
-            val group = RecipeTypeRegistry.getType(recipe).group ?: return@forEach
+            val group = RecipeType.of(recipe).group
             recipe.getInputStacks().forEach { inputStack ->
                 val itemKey = getId(inputStack)
                 map.getOrPut(itemKey) { hashMapOf() }
@@ -104,7 +110,7 @@ object RecipeRegistry : Initializable() {
         
         // add all nova machine recipes
         getUsageNovaRecipeSequence().forEach { recipe ->
-            val group = RecipeTypeRegistry.getType(recipe).group ?: return@forEach
+            val group = RecipeType.of(recipe).group
             recipe.getAllInputs().flatMap { it.getInputStacks() }.forEach { inputStack ->
                 val itemKey = getId(inputStack)
                 map.getOrPut(itemKey) { hashMapOf() }
@@ -119,7 +125,7 @@ object RecipeRegistry : Initializable() {
     private fun loadRecipesByGroup(): Map<RecipeGroup<*>, List<RecipeContainer>> {
         val map = HashMap<RecipeGroup<*>, MutableList<RecipeContainer>>()
         (getBukkitRecipeSequence() + getAllNovaRecipes()).forEach {
-            val group = RecipeTypeRegistry.getType(it).group ?: return@forEach
+            val group = RecipeType.of(it).group
             map.getOrPut(group) { ArrayList() } += RecipeContainer(it)
         }
         return map
@@ -127,7 +133,7 @@ object RecipeRegistry : Initializable() {
     
     private fun getBukkitRecipeSequence(): Sequence<Recipe> {
         return BUKKIT_RECIPES.asSequence().filter { recipe ->
-            RecipeTypeRegistry.types.any { type -> type.recipeClass.isSuperclassOf(recipe::class) }
+            RECIPE_TYPE.any { type -> type.recipeClass.isSuperclassOf(recipe::class) }
         }
     }
     

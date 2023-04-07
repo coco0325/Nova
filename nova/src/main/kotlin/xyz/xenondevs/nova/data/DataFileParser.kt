@@ -1,13 +1,15 @@
 package xyz.xenondevs.nova.data
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList
+import net.minecraft.resources.ResourceLocation
 import xyz.xenondevs.nova.LOGGER
 import xyz.xenondevs.nova.NOVA
 import xyz.xenondevs.nova.addon.AddonManager
 import xyz.xenondevs.nova.addon.AddonsInitializer
 import xyz.xenondevs.nova.addon.loader.AddonLoader
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.util.data.HashUtils
 import xyz.xenondevs.nova.util.data.getResourceAsStream
 import xyz.xenondevs.nova.util.data.getResources
@@ -15,15 +17,17 @@ import xyz.xenondevs.nova.util.insertAfter
 import java.io.File
 import java.io.FileFilter
 
-internal object DataFileParser : Initializable() {
+@InternalInit(
+    stage = InitializationStage.PRE_WORLD,
+    dependsOn = [AddonsInitializer::class]
+)
+internal object DataFileParser {
     
     private val FILE_PATTERN = Regex("""^[a-z][a-z\d_]*.json$""")
     private val DATA_DIR = File(NOVA.dataFolder, "data")
     
-    override val initializationStage = InitializationStage.PRE_WORLD
-    override val dependsOn = setOf(AddonsInitializer)
-    
-    override fun init() {
+    @InitFun
+    private fun init() {
         val existingPaths = ObjectArrayList<String>()
         
         // Extract data files
@@ -65,14 +69,14 @@ internal object DataFileParser : Initializable() {
     fun processFiles(
         dirName: String,
         filter: (File) -> Boolean = { it.isFile && it.extension == "json" },
-        fileProcessor: (NamespacedId, File) -> Unit
+        fileProcessor: (ResourceLocation, File) -> Unit
     ) {
         DATA_DIR.listFiles(FileFilter(File::isDirectory))?.forEach { namespaceDir ->
             val namespace = namespaceDir.name
             val dir = File(DATA_DIR, "$namespace/$dirName")
             if (!dir.exists() || dir.isFile) return@forEach
             dir.walkTopDown().filter(filter).forEach { file ->
-                val id = NamespacedId(namespace, file.nameWithoutExtension)
+                val id = ResourceLocation(namespace, file.nameWithoutExtension)
                 fileProcessor.invoke(id, file)
             }
         }
