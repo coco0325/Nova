@@ -175,17 +175,17 @@ internal object BlockBreaking : Listener {
         
         event.isCancelled = when (event.action) {
             START_DESTROY_BLOCK -> {
-                runTask { handleDestroyStart(player, event.packet, pos, event.direction, event.sequence) }
+                runTask(pos.location) { handleDestroyStart(player, event.packet, pos, event.direction, event.sequence) }
                 true
             }
             
             ABORT_DESTROY_BLOCK -> {
-                runTask { handleDestroyAbort(player, event.packet) }
+                runTask(pos.location) { handleDestroyAbort(player, event.packet) }
                 true
             }
             
             STOP_DESTROY_BLOCK -> {
-                runTask { handleDestroyStop(player, event.packet) }
+                runTask(pos.location) { handleDestroyStop(player, event.packet) }
                 true
             }
             

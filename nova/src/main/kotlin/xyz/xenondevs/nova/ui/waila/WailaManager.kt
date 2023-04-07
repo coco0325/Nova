@@ -17,10 +17,7 @@ import xyz.xenondevs.nova.data.serialization.persistentdata.get
 import xyz.xenondevs.nova.data.serialization.persistentdata.set
 import xyz.xenondevs.nova.initialize.Initializable
 import xyz.xenondevs.nova.initialize.InitializationStage
-import xyz.xenondevs.nova.util.Task
-import xyz.xenondevs.nova.util.registerEvents
-import xyz.xenondevs.nova.util.runTaskTimer
-import xyz.xenondevs.nova.util.unregisterEvents
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.api.player.WailaManager as IWailaManager
 
 private val ENABLED by configReloadable { DEFAULT_CONFIG.getBoolean("waila.enabled") }

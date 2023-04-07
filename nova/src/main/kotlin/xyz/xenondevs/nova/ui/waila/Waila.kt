@@ -10,6 +10,7 @@ import xyz.xenondevs.nova.ui.waila.info.WailaInfoProviderRegistry
 import xyz.xenondevs.nova.ui.waila.overlay.WailaOverlayCompound
 import xyz.xenondevs.nova.util.data.WildcardUtils
 import xyz.xenondevs.nova.util.id
+import xyz.xenondevs.nova.util.runTask
 import xyz.xenondevs.nova.util.serverTick
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.pos
@@ -53,18 +54,20 @@ internal class Waila(val player: Player) {
     }
     
     fun handleTick() {
-        val serverTick = serverTick
-        if (serverTick - lastPosUpdate >= POS_UPDATE_INTERVAL) {
-            lastPosUpdate = serverTick
-            val pos = player.getTargetBlockExact(5)?.pos
-            if (pos != lookingAt) {
-                lastDataUpdate = serverTick
-                update(pos)
+        runTask(player) {
+            val serverTick = serverTick
+            if (serverTick - lastPosUpdate >= POS_UPDATE_INTERVAL) {
+                lastPosUpdate = serverTick
+                val pos = player.getTargetBlockExact(5)?.pos
+                if (pos != lookingAt) {
+                    lastDataUpdate = serverTick
+                    update(pos)
+                }
             }
-        }
-        if (serverTick - lastDataUpdate >= DATA_UPDATE_INTERVAL) {
-            lastDataUpdate = serverTick
-            update(lookingAt)
+            if (serverTick - lastDataUpdate >= DATA_UPDATE_INTERVAL) {
+                lastDataUpdate = serverTick
+                update(lookingAt)
+            }
         }
     }
     
