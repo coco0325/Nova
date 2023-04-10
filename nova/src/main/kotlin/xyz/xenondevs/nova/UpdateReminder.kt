@@ -7,7 +7,6 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.HandlerList
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerJoinEvent
-import org.bukkit.scheduler.BukkitTask
 import xyz.xenondevs.nova.addon.Addon
 import xyz.xenondevs.nova.addon.AddonManager
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
@@ -15,7 +14,7 @@ import xyz.xenondevs.nova.data.config.NovaConfig
 import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
 import xyz.xenondevs.nova.initialize.InternalInit
-import xyz.xenondevs.nova.util.component.adventure.sendMessage
+import xyz.xenondevs.nova.util.Task
 import xyz.xenondevs.nova.util.data.Version
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runAsyncTaskTimer
@@ -26,7 +25,7 @@ internal object UpdateReminder : Listener {
     
     private const val NOVA_RESOURCE_ID = 93648
     
-    private var task: BukkitTask? = null
+    private var task: Task? = null
     private val needsUpdate = ArrayList<Addon?>()
     private val alreadyNotified = ArrayList<Addon?>()
     
