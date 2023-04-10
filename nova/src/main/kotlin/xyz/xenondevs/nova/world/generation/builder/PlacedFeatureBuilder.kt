@@ -115,9 +115,19 @@ class PlacedFeatureBuilder(id: ResourceLocation) : RegistryElementBuilder<Placed
     /**
      * Adds multiple [PlacementModifier]s to this [PlacedFeature].
      *
-     * For more information on placement modifiers, check out their [docs page](https://xenondevs.xyz/docs-world-gen/nova/addon/worldgen/features/placed-feature/#placement-modifiers).
+     * For more information on placement modifiers, check out their [docs page](https://xenondevs.xyz/docs/nova/addon/worldgen/features/placed-feature/#placement-modifiers).
      */
     fun modifiers(vararg modifiers: PlacementModifier): PlacedFeatureBuilder {
+        this.modifiers += modifiers
+        return this
+    }
+    
+    /**
+     * Adds multiple [PlacementModifier]s to this [PlacedFeature].
+     *
+     * For more information on placement modifiers, check out their [docs page](https://xenondevs.xyz/docs/nova/addon/worldgen/features/placed-feature/#placement-modifiers).
+     */
+    fun modifiers(modifiers: Collection<PlacementModifier>): PlacedFeatureBuilder {
         this.modifiers += modifiers
         return this
     }
@@ -187,6 +197,16 @@ class PlacedFeatureBuilder(id: ResourceLocation) : RegistryElementBuilder<Placed
      */
     fun environmentScan(direction: Direction, target: BlockPredicate, continuePredicate: BlockPredicate, maxSteps: Int): PlacedFeatureBuilder {
         modifiers += EnvironmentScanPlacement.scanningFor(direction, target, continuePredicate, maxSteps)
+        return this
+    }
+    
+    /**
+     * Adds an [EnvironmentScanPlacement] [PlacementModifier] to this [PlacedFeature], which scans for blocks matching
+     * the given [target BlockPredicate][BlockPredicate] up/down until it finds a matching block or the
+     * [max number of steps][maxSteps] is reached. If no matching block is found, empty is returned.
+     */
+    fun environmentScan(direction: Direction, target: BlockPredicate, maxSteps: Int): PlacedFeatureBuilder {
+        modifiers += EnvironmentScanPlacement.scanningFor(direction, target, maxSteps)
         return this
     }
     
