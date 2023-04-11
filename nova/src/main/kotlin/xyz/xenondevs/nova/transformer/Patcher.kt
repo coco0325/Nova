@@ -5,6 +5,7 @@ import net.minecraft.server.MinecraftServer
 import org.bukkit.Bukkit
 import xyz.xenondevs.bytebase.ClassWrapperLoader
 import xyz.xenondevs.bytebase.INSTRUMENTATION
+import xyz.xenondevs.bytebase.jvm.ClassWrapper
 import xyz.xenondevs.bytebase.jvm.VirtualClassPath
 import xyz.xenondevs.bytebase.util.internalName
 import xyz.xenondevs.commons.collections.mapToArray
@@ -16,6 +17,7 @@ import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
 import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.loader.NovaClassLoader
+import xyz.xenondevs.nova.transformer.adapter.LcsWrapperAdapter
 import xyz.xenondevs.nova.transformer.patch.FieldFilterPatch
 import xyz.xenondevs.nova.transformer.patch.block.NoteBlockPatch
 import xyz.xenondevs.nova.transformer.patch.bossbar.BossBarOriginPatch
@@ -36,6 +38,7 @@ import xyz.xenondevs.nova.transformer.patch.playerlist.BroadcastPacketPatch
 import xyz.xenondevs.nova.transformer.patch.sound.SoundPatches
 import xyz.xenondevs.nova.transformer.patch.worldgen.FeatureSorterPatch
 import xyz.xenondevs.nova.transformer.patch.worldgen.NovaRuleTestPatch
+import xyz.xenondevs.nova.transformer.patch.worldgen.ThreadingDetectorPatch
 import xyz.xenondevs.nova.transformer.patch.worldgen.WrapperBlockPatch
 import xyz.xenondevs.nova.transformer.patch.worldgen.chunksection.ChunkAccessSectionsPatch
 import xyz.xenondevs.nova.transformer.patch.worldgen.chunksection.LevelChunkSectionPatch
@@ -46,6 +49,7 @@ import xyz.xenondevs.nova.util.data.getResourceData
 import xyz.xenondevs.nova.util.reflection.ReflectionRegistry.CLASS_LOADER_PARENT_FIELD
 import xyz.xenondevs.nova.util.reflection.ReflectionUtils
 import xyz.xenondevs.nova.util.reflection.defineClass
+import java.io.File
 import java.lang.System.getProperty
 import java.lang.instrument.ClassDefinition
 import java.lang.management.ManagementFactory
@@ -61,13 +65,13 @@ internal object Patcher {
             StackSizePatch, FeatureSorterPatch, LevelChunkSectionPatch, ChunkAccessSectionsPatch, RegistryCodecPatch,
             WrapperBlockPatch, MappedRegistryPatch, FuelPatches, RemainingItemPatches, FireResistancePatches, SoundPatches,
             BroadcastPacketPatch, CBFCompoundTagPatch, FakePlayerEventPreventionPatch, LegacyConversionPatch, WearablePatch,
-            NovaRuleTestPatch, BossBarOriginPatch
+            NovaRuleTestPatch, BossBarOriginPatch, ThreadingDetectorPatch
         ).filter(Transformer::shouldTransform).toSet()
     }
     
     // These class names can't be accessed via reflection to prevent class loading
-    private val injectedClasses = setOf(
-        "xyz/xenondevs/nova/transformer/patch/worldgen/chunksection/LevelChunkSectionWrapper"
+    private val injectedClasses: Map<String, LcsWrapperAdapter?> = mapOf(
+        "xyz/xenondevs/nova/transformer/patch/worldgen/chunksection/LevelChunkSectionWrapper" to LcsWrapperAdapter
     )
     
     @InitFun
@@ -100,13 +104,20 @@ internal object Patcher {
     }
     
     private fun defineInjectedClasses() {
-        (javaClass.classLoader as NovaClassLoader).addInjectedClasses(injectedClasses.map { it.replace('/', '.') })
+        (javaClass.classLoader as NovaClassLoader).addInjectedClasses(injectedClasses.keys.map { it.replace('/', '.') })
         if (ServerUtils.isReload) return
-        injectedClasses.forEach {
-            val bytes = getResourceData("$it.class")
-            if (bytes.isEmpty()) throw IllegalStateException("Failed to load injected class $it (Wrong path?)")
+        injectedClasses.forEach { (name, adapter) ->
+            var bytes = getResourceData("$name.class")
+            if (bytes.isEmpty()) throw IllegalStateException("Failed to load injected class $name (Wrong path?)")
             val minecraftServerClass = MinecraftServer::class.java
-            minecraftServerClass.classLoader.defineClass(it.replace('/', '.'), bytes, minecraftServerClass.protectionDomain)
+            if (adapter != null) {
+                val clazz = ClassWrapper("$name.class", bytes)
+                adapter.adapt(clazz)
+                bytes = clazz.assemble()
+                File(clazz.className + ".class").writeBytes(bytes)
+            }
+            
+            minecraftServerClass.classLoader.defineClass(name.replace('/', '.'), bytes, minecraftServerClass.protectionDomain)
         }
     }
     
