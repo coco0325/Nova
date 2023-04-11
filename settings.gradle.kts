@@ -82,9 +82,9 @@ dependencyResolutionManagement {
 
 pluginManagement {
     repositories {
+        maven("https://repo.xenondevs.xyz/releases/")
         mavenLocal()
         mavenCentral()
         gradlePluginPortal()
-        maven("https://repo.xenondevs.xyz/releases/")
     }
 }

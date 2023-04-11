@@ -5,12 +5,21 @@ val mojangMapped = project.hasProperty("mojang-mapped") ||  System.getProperty("
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     java
+    `java-library`
+    id("io.papermc.paperweight.userdev") version "1.5.4"
     kotlin("jvm") version libs.versions.kotlin
     id("org.jetbrains.dokka") version libs.versions.dokka
     id("xyz.xenondevs.jar-loader-gradle-plugin")
     id("xyz.xenondevs.specialsource-gradle-plugin") version "1.0.0"
     id("xyz.xenondevs.string-remapper-gradle-plugin") version "1.0"
     `maven-publish`
+}
+
+repositories {
+    maven("https://repo.xenondevs.xyz/releases/")
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
 }
 
 dependencies {
@@ -22,7 +31,7 @@ dependencies {
     novaLoaderApi("xyz.xenondevs.invui:invui:1.0") { for (i in 1..13) exclude("xyz.xenondevs.invui", "inventory-access-r$i") }
     novaLoaderApi("xyz.xenondevs.invui:inventory-access-r13:1.0:remapped-mojang")
     novaLoaderApi("xyz.xenondevs.invui:invui-kotlin:1.0")
-    novaLoaderApi("xyz.xenondevs:nms-utilities:0.8:remapped-mojang")
+    novaLoaderApi("xyz.xenondevs:nms-utilities:0.8")
     
     // internal dependencies
     compileOnly(project(":nova-api"))
@@ -41,7 +50,7 @@ dependencies {
     spigotRuntime(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
 
     // folia
-    compileOnly("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
+    paperweight.foliaDevBundle("1.19.4-R0.1-SNAPSHOT")
     
     // plugin dependencies
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.6")

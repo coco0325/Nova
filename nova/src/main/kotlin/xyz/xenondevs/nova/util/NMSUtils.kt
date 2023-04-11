@@ -5,6 +5,7 @@ package xyz.xenondevs.nova.util
 import com.mojang.datafixers.util.Either
 import com.mojang.serialization.JsonOps
 import com.mojang.serialization.Lifecycle
+import io.papermc.paper.threadedregions.RegionizedWorldData
 import net.minecraft.core.Direction
 import net.minecraft.core.Holder
 import net.minecraft.core.MappedRegistry
@@ -302,7 +303,18 @@ fun LevelChunkSection.getBlockState(pos: BlockPos): BlockState {
     return getBlockState(pos.x and 0xF, pos.y and 0xF, pos.z and 0xF)
 }
 
-inline fun Level.captureDrops(run: () -> Unit): List<ItemEntity> {
+/*inline fun Level.captureDrops(run: () -> Unit): List<ItemEntity> {
+    val captureDrops = ArrayList<ItemEntity>()
+    this.captureDrops = captureDrops
+    try {
+        run.invoke()
+        return captureDrops
+    } finally {
+        this.captureDrops = null
+    }
+}*/
+
+inline fun RegionizedWorldData.captureDrops(run: () -> Unit): List<ItemEntity> {
     val captureDrops = ArrayList<ItemEntity>()
     this.captureDrops = captureDrops
     try {

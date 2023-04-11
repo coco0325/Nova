@@ -28,6 +28,7 @@ import xyz.xenondevs.nova.util.soundGroup
 import xyz.xenondevs.nova.util.toNovaPos
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.logic.sound.SoundEngine
+import java.util.*
 import kotlin.math.floor
 import kotlin.random.Random
 import net.minecraft.core.BlockPos as MojangBlockPos
@@ -108,7 +109,7 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
         
         val pos = entity.position()
         val packet = ClientboundSoundPacket(
-            Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(newSound))),
+            Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(newSound.lowercase()))),
             entity.soundSource,
             pos.x,
             pos.y,
@@ -145,7 +146,7 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
                 if (volume > 1.0) 16.0 * volume else 16.0,
                 level.dimension(),
                 ClientboundSoundPacket(
-                    Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(soundGroup.breakSound.name))),
+                    Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(soundGroup.breakSound.name.lowercase()))),
                     SoundSource.BLOCKS,
                     pos.x + 0.5,
                     pos.y + 0.5,
