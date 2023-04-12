@@ -1,17 +1,25 @@
 plugins {
+    `java-library`
+    id("io.papermc.paperweight.userdev") version "1.5.4"
     `kotlin-dsl`
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
-    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-    maven("https://repo.papermc.io/repository/maven-public/")
+    maven {
+        url = uri("https://repo.papermc.io/repository/maven-public/")
+        metadataSources {
+            mavenPom()
+        }
+    }
 }
 
 dependencies {
-    implementation("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
+    //implementation("org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT")
     implementation("net.lingala.zip4j:zip4j:2.11.1")
+    //implementation("dev.folia:folia-api:1.19.4-R0.1-SNAPSHOT")
+    paperweight.foliaDevBundle("1.19.4-R0.1-SNAPSHOT")
 }
 
 gradlePlugin {

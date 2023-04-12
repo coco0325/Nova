@@ -32,8 +32,8 @@ dependencyResolutionManagement {
             library("ktor-serialization-gson-jvm", "io.ktor", "ktor-serialization-gson-jvm").versionRef("ktor")
             
             // lib - spigot
-            library("spigot-api", "org.spigotmc", "spigot-api").versionRef("spigot")
-            library("spigot-server", "org.spigotmc", "spigot").versionRef("spigot")
+            library("spigot-api", "dev.folia", "folia-api").versionRef("spigot")
+            //library("spigot-server", "org.spigotmc", "spigot").versionRef("spigot")
             
             // lib - cbf
             library("cosmic-binary-format", "xyz.xenondevs.cbf", "cosmic-binary-format").versionRef("cbf")

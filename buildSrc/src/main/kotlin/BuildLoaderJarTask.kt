@@ -164,6 +164,10 @@ abstract class BuildLoaderJarTask : DefaultTask() {
     private fun getOutputFile(project: Project): Path {
         return getOutputFile(project.tasks.named<Jar>("jar").get())
     }
+
+    /*private fun getOutputFileReobf(project: Project): Path {
+        return getOutputFile(project.tasks.named<io.papermc.per>("reobfJar").get())
+    }*/
     
     private fun getOutputFile(jar: Jar): Path {
         val dir = jar.destinationDirectory.get().asFile

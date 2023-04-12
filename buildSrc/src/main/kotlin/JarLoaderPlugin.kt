@@ -13,7 +13,7 @@ class JarLoaderPlugin : Plugin<Project> {
             group = "build"
             
             dependsOn(listOf(
-                nova.tasks.named("finalJar"),
+                nova.tasks.named("reobfJar"),
                 novaAPI.tasks.named("jar"),
                 novaLoader.tasks.named("jar")
             ))

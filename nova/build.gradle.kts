@@ -16,7 +16,12 @@ plugins {
 }
 
 repositories {
-    maven("https://repo.xenondevs.xyz/releases/")
+    maven {
+        url = uri("https://repo.xenondevs.xyz/releases/")
+        metadataSources {
+            mavenPom()
+        }
+    }
     mavenLocal()
     mavenCentral()
     gradlePluginPortal()
@@ -47,7 +52,7 @@ dependencies {
     
     // spigot runtime dependencies
     spigotRuntime(libs.bundles.maven.resolver)
-    spigotRuntime(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
+    //spigotRuntime(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
 
     // folia
     paperweight.foliaDevBundle("1.19.4-R0.1-SNAPSHOT")
@@ -82,7 +87,9 @@ sourceSets {
 tasks {
     register("finalJar") {
         group = "build"
-        dependsOn(if (mojangMapped) "jar" else "remapObfToSpigot")
+        dependsOn(reobfJar)
+
+        //dependsOn(if (mojangMapped) "jar" else "remapObfToSpigot")
     }
     
     register<Jar>("sources") {
@@ -92,11 +99,11 @@ tasks {
     }
 }
 
-spigotRemap {
+/*spigotRemap {
     spigotVersion.set(libs.versions.spigot.get().substringBefore('-'))
     sourceJarTask.set(tasks.jar)
     spigotJarClassifier.set("")
-}
+}*/
 
 remapStrings {
     remapGoal.set(if (mojangMapped) "mojang" else "spigot")
