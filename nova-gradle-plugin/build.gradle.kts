@@ -1,24 +1,14 @@
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
     `maven-publish`
     kotlin("jvm") version libs.versions.kotlin
-    id("com.gradle.plugin-publish") version "0.14.0"
 }
 
 dependencies {
     implementation(libs.bundles.minecraft.assets)
     implementation(libs.spigot.api)
     implementation(libs.zip4j)
-}
-
-tasks {
-    register<Jar>("sources") {
-        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        from("src/main/kotlin")
-        archiveClassifier.set("sources")
-    }
 }
 
 gradlePlugin {

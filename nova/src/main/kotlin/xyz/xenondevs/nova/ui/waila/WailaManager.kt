@@ -15,8 +15,10 @@ import xyz.xenondevs.nova.data.config.configReloadable
 import xyz.xenondevs.nova.data.resources.ResourceGeneration
 import xyz.xenondevs.nova.data.serialization.persistentdata.get
 import xyz.xenondevs.nova.data.serialization.persistentdata.set
-import xyz.xenondevs.nova.initialize.Initializable
+import xyz.xenondevs.nova.initialize.DisableFun
+import xyz.xenondevs.nova.initialize.InitFun
 import xyz.xenondevs.nova.initialize.InitializationStage
+import xyz.xenondevs.nova.initialize.InternalInit
 import xyz.xenondevs.nova.util.registerEvents
 import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.util.unregisterEvents
@@ -30,30 +32,22 @@ private val UPDATE_INTERVAL by configReloadable { DEFAULT_CONFIG.getLong("waila.
 private val Player.isWailaEnabled: Boolean
     get() = persistentDataContainer.get<Boolean>(WAILA_ENABLED_KEY) != false
 
-internal object WailaManager : Initializable(), Listener, IWailaManager {
-    
-    override val initializationStage = InitializationStage.POST_WORLD
-    override val dependsOn = setOf(ResourceGeneration.PostWorld, AddonsInitializer)
+@InternalInit(
+    stage = InitializationStage.POST_WORLD,
+    dependsOn = [ResourceGeneration.PostWorld::class, AddonsInitializer::class]
+)
+internal object WailaManager : Listener, IWailaManager {
     
     private var tickTask: BukkitTask? = null
     private val overlays = HashMap<Player, Waila>()
     
     //<editor-fold desc="Nova-API", defaultstate="collapsed">
-    override val isCompletelyDisabled: Boolean
-        get() = !ENABLED
-    
-    override fun getState(player: Player): Boolean =
-        player.isWailaEnabled
-    
-    override fun setState(player: Player, enabled: Boolean): Boolean {
-        return if (toggle(player, enabled)) enabled else !enabled
-    }
+    override fun isCompletelyDisabled(): Boolean = !ENABLED
+    override fun getState(player: Player): Boolean = player.isWailaEnabled
+    override fun setState(player: Player, enabled: Boolean): Boolean = if (toggle(player, enabled)) enabled else !enabled
     //</editor-fold>
     
-    override fun init() {
-        reload()
-    }
-    
+    @InitFun
     fun reload() {
         unregisterEvents()
         overlays.values.forEach { it.setActive(false) }
@@ -64,6 +58,11 @@ internal object WailaManager : Initializable(), Listener, IWailaManager {
             Bukkit.getOnlinePlayers().forEach(::tryAddWailaOverlay)
             tickTask = runTaskTimer(0, UPDATE_INTERVAL) { overlays.values.forEach(Waila::handleTick) }
         }
+    }
+    
+    @DisableFun
+    private fun disable() {
+        overlays.values.forEach { it.setActive(false) }
     }
     
     fun toggle(player: Player, state: Boolean): Boolean {
@@ -83,10 +82,6 @@ internal object WailaManager : Initializable(), Listener, IWailaManager {
         }
         
         return true
-    }
-    
-    override fun disable() {
-        overlays.values.forEach { it.setActive(false) }
     }
     
     private fun tryAddWailaOverlay(player: Player) {

@@ -1,50 +1,62 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    kotlin("jvm") version libs.versions.kotlin
-    id("org.jetbrains.dokka") version "1.7.20"
-    id("xyz.xenondevs.jar-loader-gradle-plugin")
-    `maven-publish`
+    alias(libs.plugins.kotlin)
+    alias(libs.plugins.dokka)
+    id("xyz.xenondevs.loader-jar-plugin")
 }
 
-repositories {
+fun RepositoryHandler.configureRepos() {
+    mavenLocal()
     mavenCentral()
+    maven("https://repo.xenondevs.xyz/releases")
+    
+    // include xenondevs-nms repository if requested
+    if (project.hasProperty("xenondevsNms")) {
+        maven("https://repo.papermc.io/repository/maven-public/") // authlib, brigadier, etc.
+        maven {
+            name = "xenondevsNms"
+            url = uri("https://repo.xenondevs.xyz/nms/")
+            credentials(PasswordCredentials::class)
+        }
+    }
 }
 
-dependencies {
-    implementation(project(":nova"))
-    implementation(project(":nova-api"))
-    implementation(project(":nova-loader"))
+repositories { configureRepos() }
+
+loaderJar {
+    spigotVersion.set(libs.versions.spigot)
 }
 
 subprojects {
     group = "xyz.xenondevs.nova"
     version = properties["version"] as String
     
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-        maven("https://repo.xenondevs.xyz/releases")
-        maven("https://repo.xenondevs.xyz/third-party-releases")
-        maven("https://jitpack.io")
-        maven("https://maven.enginehub.org/repo/")
-        maven("https://repo.glaremasters.me/repository/bloodshot")
-        maven("https://mvn.lumine.io/repository/maven-public/")
-        maven("https://repo.papermc.io/repository/maven-public/")
-    }
+    repositories { configureRepos() }
     
-    tasks.withType<ProcessResources> {
-        filesMatching(listOf("*.yml", "*.json")) {
-            expand(project.properties)
+    // The following excludes the deprecated kotlin-stdlib-jdk8 and kotlin-stdlib-jdk7
+    // Since Kotlin 1.8.0, those are merged into kotlin-stdlib
+    // Due to the way our library loader works, excluding these is required to prevent version conflicts
+    dependencies {
+        configurations.all {
+            exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk8")
+            exclude("org.jetbrains.kotlin", "kotlin-stdlib-jdk7")
         }
     }
     
-    tasks.withType<KotlinCompile>().all {
-        kotlinOptions {
-            jvmTarget = "17"
-            freeCompilerArgs = listOf("-Xjvm-default=all")
+    tasks {
+        register<Jar>("sources") {
+            dependsOn(JavaPlugin.CLASSES_TASK_NAME)
+            from("src/main/java", "src/main/kotlin")
+            archiveClassifier.set("sources")
+        }
+        
+        withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile> {
+            compilerOptions {
+                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                freeCompilerArgs.addAll(
+                    "-Xjvm-default=all",
+                    "-opt-in=kotlin.io.path.ExperimentalPathApi"
+                )
+            }
         }
     }
 }
