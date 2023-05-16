@@ -8,7 +8,6 @@ fun RepositoryHandler.configureRepos() {
     mavenLocal()
     mavenCentral()
     maven("https://repo.xenondevs.xyz/releases")
-    
     // include xenondevs-nms repository if requested
     if (project.hasProperty("xenondevsNms")) {
         maven("https://repo.papermc.io/repository/maven-public/") // authlib, brigadier, etc.

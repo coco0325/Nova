@@ -36,6 +36,18 @@ import xyz.xenondevs.nova.api.player.WailaManager as IWailaManager
 import xyz.xenondevs.nova.api.tileentity.TileEntityManager as ITileEntityManager
 
 private val REQUIRED_SERVER_VERSION = Version("1.19.4")..Version("1.19.4")
+
+var IS_FOLIA = isFolia()
+
+private fun isFolia(): Boolean {
+    return try {
+        Class.forName("io.papermc.paper.threadedregions.RegionizedServer")
+        true
+    } catch (e: ClassNotFoundException) {
+        false
+    }
+}
+
 internal val IS_DEV_SERVER: Boolean = System.getProperty("NovaDev") != null
 internal lateinit var NOVA: Nova private set
 internal lateinit var LOGGER: Logger private set

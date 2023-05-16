@@ -197,6 +197,7 @@ abstract class BuildLoaderJarTask : DefaultTask() {
             .mapTo(HashSet()) { it.url.toString() }
             .apply { this -= MAVEN_CENTRAL }
             .toList() // Required for proper serialization
+        println()
         
         setLibraries(librariesYml, "novaLoader", true)
         excludeConfiguration(librariesYml, "spigotRuntime")
@@ -261,6 +262,10 @@ abstract class BuildLoaderJarTask : DefaultTask() {
     private fun getOutputFile(project: Project): Path {
         return getOutputFile(project.tasks.named<JarTask>("jar").get())
     }
+
+    /*private fun getOutputFileReobf(project: Project): Path {
+        return getOutputFile(project.tasks.named<io.papermc.per>("reobfJar").get())
+    }*/
     
     private fun getOutputFile(jar: JarTask): Path {
         val dir = jar.destinationDirectory.get().asFile

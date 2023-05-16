@@ -308,7 +308,7 @@ object RecipeManager : Listener {
         val recipe = event.recipe ?: return
         
         var requiresContainer = recipe.key in registeredVanillaRecipeKeys
-        if (!requiresContainer && event.inventory.contents.any { it.novaItem != null }) {
+        if (!requiresContainer && event.inventory.contents.any { it?.novaItem != null }) {
             // prevent non-Nova recipes from using Nova items
             event.inventory.result = ItemStack(Material.AIR)
             requiresContainer = true

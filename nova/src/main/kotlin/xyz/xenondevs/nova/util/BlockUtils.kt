@@ -1,5 +1,6 @@
 package xyz.xenondevs.nova.util
 
+import io.papermc.paper.threadedregions.TickRegionScheduler
 import net.minecraft.core.Direction
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.nbt.CompoundTag
@@ -348,7 +349,7 @@ internal fun Block.removeInternal(ctx: BlockBreakContext, drops: Boolean, breakE
     val block = state.block
     val blockEntity = level.getBlockEntity(pos)
     
-    return level.captureDrops {
+    return TickRegionScheduler.getCurrentRegionizedWorldData().captureDrops {
         // calls game and level events (includes break effects), angers piglins, ignites unstable tnt, etc.
         val willDestroy = { block.playerWillDestroy(level, pos, state, nmsPlayer) }
         if (breakEffects) {
@@ -526,8 +527,8 @@ fun Material.getBreakParticlesPacket(location: Location): ClientboundLevelPartic
  * Plays the breaking sound for this block.
  */
 fun Block.playBreakSound() {
-    val soundGroup = soundGroup ?: return
-    world.playSound(location, soundGroup.breakSound, soundGroup.breakVolume, soundGroup.breakPitch)
+    val soundGroup = blockSoundGroup ?: return
+    world.playSound(location, soundGroup.breakSound, soundGroup.volume, soundGroup.pitch)
 }
 
 /**

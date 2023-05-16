@@ -88,18 +88,19 @@ internal object BackingStateManager : Listener {
                         
                         if (!chunkPos.isLoaded())
                             continue
-                        
-                        BlockStateSearcher.searchChunk(chunkPos, queries)
-                            .withIndex()
-                            .forEach { (idx, result) ->
-                                if (result == null)
-                                    return@forEach
-                                
-                                backingStates[idx].handleQueryResult(result)
+
+                        chunkPos.world?.let {
+                            runTask(it, chunkPos.x, chunkPos.z) {
+                                BlockStateSearcher.searchChunk(chunkPos, queries)
+                                    .withIndex()
+                                    .forEach { (idx, result) ->
+                                        if (result == null)
+                                            return@forEach
+
+                                        backingStates[idx].handleQueryResult(result)
+                                    }
+                                chunkPos.chunk!!.persistentDataContainer.set(CHUNK_SEARCH_ID_KEY, PersistentDataType.INTEGER, chunkSearchId)
                             }
-                        
-                        runTask {
-                            chunkPos.chunk!!.persistentDataContainer.set(CHUNK_SEARCH_ID_KEY, PersistentDataType.INTEGER, chunkSearchId)
                         }
                     }
                     

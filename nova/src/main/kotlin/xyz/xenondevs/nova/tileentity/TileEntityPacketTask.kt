@@ -2,6 +2,7 @@ package xyz.xenondevs.nova.tileentity
 
 import net.minecraft.network.protocol.Packet
 import org.bukkit.scheduler.BukkitTask
+import xyz.xenondevs.nova.util.Task
 import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.util.send
 
@@ -11,11 +12,11 @@ class TileEntityPacketTask(
     private val interval: Long
 ) {
     
-    private var task: BukkitTask? = null
+    private var task: Task? = null
     
     fun start() {
         if (task == null)
-            task = runTaskTimer(0, interval, ::sendPackets)
+            task = runTaskTimer(0, interval, ::sendPackets) // Global or entity task?
     }
     
     fun stop() {

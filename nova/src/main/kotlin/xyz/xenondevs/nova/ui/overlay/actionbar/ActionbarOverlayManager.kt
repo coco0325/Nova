@@ -11,6 +11,7 @@ import xyz.xenondevs.nmsutils.network.event.clientbound.ClientboundActionBarPack
 import xyz.xenondevs.nmsutils.network.event.clientbound.ClientboundSystemChatPacketEvent
 import xyz.xenondevs.nova.data.config.DEFAULT_CONFIG
 import xyz.xenondevs.nova.data.resources.CharSizes
+import xyz.xenondevs.nova.util.Task
 import xyz.xenondevs.nova.util.component.adventure.move
 import xyz.xenondevs.nova.util.runTaskTimer
 import xyz.xenondevs.nova.util.send
@@ -19,7 +20,7 @@ import net.minecraft.network.chat.Component as MojangComponent
 
 object ActionbarOverlayManager {
     
-    private var tickTask: BukkitTask? = null
+    private var tickTask: Task? = null
     
     private val EMPTY_ACTION_BAR_PACKET = ClientboundSetActionBarTextPacket(MojangComponent.empty())
     private val overlays = HashMap<UUID, HashSet<ActionbarOverlay>>()

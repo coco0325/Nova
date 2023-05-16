@@ -28,6 +28,7 @@ import xyz.xenondevs.nova.util.soundGroup
 import xyz.xenondevs.nova.util.toNovaPos
 import xyz.xenondevs.nova.world.BlockPos
 import xyz.xenondevs.nova.world.block.logic.sound.SoundEngine
+import java.util.*
 import kotlin.math.floor
 import kotlin.random.Random
 import net.minecraft.core.BlockPos as MojangBlockPos
@@ -64,11 +65,11 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
             val setPos = (if (above.`is`(BlockTags.INSIDE_STEP_SOUND_BLOCKS)) nmsPos.above() else nmsPos).toNovaPos(level.world)
             
             val block = setPos.block
-            val soundGroup = block.soundGroup ?: return
+            val soundGroup = block.blockSoundGroup ?: return
             val newSound = soundGroup.stepSound
             val oldSound = block.type.soundGroup.stepSound.key.key
             
-            playSound(entity, oldSound, newSound, soundGroup.stepVolume, soundGroup.stepPitch)
+            playSound(entity, oldSound, newSound.name, soundGroup.volume, soundGroup.pitch)
         }
     }
     
@@ -92,11 +93,11 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
             val block = pos.block
             
             if (!block.type.isAir) {
-                val soundGroup = block.soundGroup ?: return
+                val soundGroup = block.blockSoundGroup ?: return
                 val newSound = soundGroup.fallSound
                 val oldSound = block.type.soundGroup.fallSound.key.key
                 
-                playSound(entity, oldSound, newSound, soundGroup.fallVolume, soundGroup.fallPitch)
+                playSound(entity, oldSound, newSound.name, soundGroup.volume, soundGroup.pitch)
             }
         }
     }
@@ -108,7 +109,7 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
         
         val pos = entity.position()
         val packet = ClientboundSoundPacket(
-            Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(newSound))),
+            Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(newSound.lowercase()))),
             entity.soundSource,
             pos.x,
             pos.y,
@@ -132,20 +133,20 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
     @JvmStatic
     fun playBreakSound(level: Level, pos: MojangBlockPos) {
         val novaPos = pos.toNovaPos(level.world)
-        val soundGroup = novaPos.block.soundGroup ?: return
+        val soundGroup = novaPos.block.blockSoundGroup ?: return
         val oldSound = novaPos.block.type.soundGroup.breakSound.key.key
         
         // send custom break sound if it's overridden
         if (SoundEngine.overridesSound(oldSound)) {
-            val pitch = soundGroup.breakPitch
-            val volume = soundGroup.breakVolume
+            val pitch = soundGroup.pitch
+            val volume = soundGroup.volume
             MINECRAFT_SERVER.playerList.broadcast(
                 null,
                 pos.x + 0.5, pos.y + 0.5, pos.z + 0.5,
                 if (volume > 1.0) 16.0 * volume else 16.0,
                 level.dimension(),
                 ClientboundSoundPacket(
-                    Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(soundGroup.breakSound))),
+                    Holder.direct(SoundEvent.createVariableRangeEvent(ResourceLocation(soundGroup.breakSound.name.lowercase()))),
                     SoundSource.BLOCKS,
                     pos.x + 0.5,
                     pos.y + 0.5,
@@ -156,7 +157,7 @@ internal object SoundPatches : MultiTransformer(MojangEntity::class, MojangLivin
             )
         }
     }
-    
+
     @JvmStatic
     fun getEquipSound(itemStack: MojangStack): SoundEvent? {
         val novaItem = itemStack.novaItem

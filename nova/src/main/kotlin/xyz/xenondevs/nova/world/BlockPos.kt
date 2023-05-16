@@ -43,11 +43,11 @@ data class BlockPos(val world: World, val x: Int, val y: Int, val z: Int) {
         BlockPos(world, this.x + x, this.y + y, this.z + z)
     
     fun playSound(sound: String, volume: Float, pitch: Float) {
-        world.playSound(Location(world, x + .5, y + .5, z + .5), sound, volume, pitch)
+        world.playSound(Location(world, x + .5, y + .5, z + .5), sound.lowercase(), volume, pitch)
     }
     
     fun playSound(sound: String, category: SoundCategory, volume: Float, pitch: Float) {
-        world.playSound(Location(world, x + .5, y + .5, z + .5), sound, category, volume, pitch)
+        world.playSound(Location(world, x + .5, y + .5, z + .5), sound.lowercase(), category, volume, pitch)
     }
     
 }

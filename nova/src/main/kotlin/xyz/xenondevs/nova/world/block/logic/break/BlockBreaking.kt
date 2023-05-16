@@ -92,7 +92,9 @@ internal object BlockBreaking : Listener {
         playerBreakers.removeIf { (_, breaker) ->
             try {
                 if (!breaker.isStopped)
-                    breaker.handleTick()
+                    runTask(breaker.player.location){
+                        breaker.handleTick()
+                    }
             } catch (e: Exception) {
                 LOGGER.log(Level.SEVERE, "An exception occurred in BlockBreaker tick", e)
             }
@@ -175,17 +177,17 @@ internal object BlockBreaking : Listener {
         
         event.isCancelled = when (event.action) {
             START_DESTROY_BLOCK -> {
-                runTask { handleDestroyStart(player, event.packet, pos, event.direction, event.sequence) }
+                runTask(player.location) { handleDestroyStart(player, event.packet, pos, event.direction, event.sequence) }
                 true
             }
             
             ABORT_DESTROY_BLOCK -> {
-                runTask { handleDestroyAbort(player, event.packet) }
+                runTask(player.location) { handleDestroyAbort(player, event.packet) }
                 true
             }
             
             STOP_DESTROY_BLOCK -> {
-                runTask { handleDestroyStop(player, event.packet) }
+                runTask(player.location) { handleDestroyStop(player, event.packet) }
                 true
             }
             

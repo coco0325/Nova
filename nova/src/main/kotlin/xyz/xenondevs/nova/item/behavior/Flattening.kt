@@ -32,7 +32,8 @@ object Flattening : ItemBehavior() {
                 block.type = Material.DIRT_PATH
                 block.location.playSoundNearby(Sound.ITEM_SHOVEL_FLATTEN, SoundCategory.BLOCKS, 1f, 1f)
                 player.damageItemInMainHand()
-                runTaskLater(1) { player.swingHand(event.hand!!) }
+                runTaskLater(1, player) { player.swingHand(event.hand!!) }
+
             }
         }
     }

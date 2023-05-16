@@ -6,6 +6,18 @@ plugins {
     id("xyz.xenondevs.library-loader-plugin")
 }
 
+repositories {
+    maven {
+        url = uri("https://repo.xenondevs.xyz/releases/")
+        metadataSources {
+            mavenPom()
+        }
+    }
+    mavenLocal()
+    mavenCentral()
+    gradlePluginPortal()
+}
+
 dependencies {
     // api dependencies
     spigotRuntimeApi(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
@@ -32,6 +44,10 @@ dependencies {
     
     // spigot runtime dependencies
     spigotRuntime(libs.bundles.maven.resolver)
+    //spigotRuntime(variantOf(libs.spigot.server) { classifier("remapped-mojang") })
+
+    // folia
+    paperweight.foliaDevBundle("1.19.4-R0.1-SNAPSHOT")
     
     // test dependencies
     testImplementation(libs.bundles.test)

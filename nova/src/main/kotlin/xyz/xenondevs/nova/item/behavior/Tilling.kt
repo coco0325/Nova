@@ -13,14 +13,8 @@ import org.bukkit.entity.Player
 import org.bukkit.event.block.Action
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
-import xyz.xenondevs.nova.util.above
-import xyz.xenondevs.nova.util.interactionHand
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.util.item.DamageableUtils
-import xyz.xenondevs.nova.util.nmsDirection
-import xyz.xenondevs.nova.util.nmsState
-import xyz.xenondevs.nova.util.runTaskLater
-import xyz.xenondevs.nova.util.serverLevel
-import xyz.xenondevs.nova.util.serverPlayer
 import xyz.xenondevs.nova.world.pos
 import net.minecraft.world.item.ItemStack as MojangStack
 
@@ -60,7 +54,7 @@ object Tilling : ItemBehavior() {
                 // damage item
                 DamageableUtils.damageAndBreakItem(serverPlayer.getItemInHand(interactionHand), 1, serverPlayer)
                 // swing hand
-                runTaskLater(1) { serverPlayer.swing(interactionHand, true) }
+                runTaskLater(1, player) { serverPlayer.swing(interactionHand, true) }
             }
         }
     }

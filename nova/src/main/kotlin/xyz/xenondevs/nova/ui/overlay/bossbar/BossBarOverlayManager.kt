@@ -35,13 +35,8 @@ import xyz.xenondevs.nova.ui.overlay.bossbar.positioning.BarPositioning
 import xyz.xenondevs.nova.ui.overlay.bossbar.vanilla.VanillaBossBarOverlay
 import xyz.xenondevs.nova.ui.overlay.bossbar.vanilla.VanillaBossBarOverlayCompound
 import xyz.xenondevs.nova.ui.overlay.character.MovedFonts
+import xyz.xenondevs.nova.util.*
 import xyz.xenondevs.nova.util.component.adventure.move
-import xyz.xenondevs.nova.util.registerEvents
-import xyz.xenondevs.nova.util.registerPacketListener
-import xyz.xenondevs.nova.util.runTaskTimer
-import xyz.xenondevs.nova.util.send
-import xyz.xenondevs.nova.util.unregisterEvents
-import xyz.xenondevs.nova.util.unregisterPacketListener
 import java.util.*
 import kotlin.math.max
 import net.minecraft.network.chat.Component as MojangComponent
@@ -53,7 +48,7 @@ private val SEND_BARS_AFTER_RESOURCE_PACK_LOADED by configReloadable { DEFAULT_C
 @InternalInit(stage = InitializationStage.POST_WORLD)
 object BossBarOverlayManager : Listener {
     
-    private var tickTask: BukkitTask? = null
+    private var tickTask: Task? = null
     private val bars = HashMap<UUID, Array<BossBar>>()
     
     private val overlays = HashMap<UUID, ArrayList<BossBarOverlayCompound>>()
